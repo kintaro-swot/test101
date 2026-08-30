@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APE — Project Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --red:#a11d2c;
+    --red-dark:#7d1622;
+    --cream:#fdf3f3;
+    --panel:#ffffff;
+    --border:#f1d9d9;
+    --text:#2a1414;
+    --muted:#8a6b6b;
+    --green:#3f8f4f;
+    --orange:#e08a1e;
+    --grey:#555;
+    --purple:#6b4fa0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#e9e9e9;
+    display:flex;
+    justify-content:center;
+    padding:24px 12px;
+  }
+  .phone{
+    width:100%;
+    max-width:420px;
+    background:var(--cream);
+    border:10px solid #111;
+    border-radius:36px;
+    overflow:hidden;
+    box-shadow:0 20px 40px rgba(0,0,0,0.25);
+    display:flex;
+    flex-direction:column;
+    height:820px;
+  }
+  header{
+    background:#fff;
+    padding:18px 20px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:1px solid var(--border);
+  }
+  header .logo{
+    font-weight:800;
+    font-size:22px;
+    color:var(--red);
+    letter-spacing:1px;
+  }
+  header .icons{display:flex;gap:14px;font-size:14px;align-items:center;}
+  header .logout-link{
+    color:var(--red);font-size:12px;font-weight:700;cursor:pointer;
+    background:none;border:none;text-decoration:underline;
+  }
+  .back-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px 0;
+  }
+  .back-btn{
+    background:var(--red);color:#fff;border:none;border-radius:8px;
+    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .edit-btn{
+    background:var(--red);color:#fff;border:none;border-radius:8px;
+    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  main{
+    flex:1;
+    overflow-y:auto;
+    padding:16px 18px 90px;
+  }
+  h1.page-title{
+    font-size:22px;margin:6px 0 16px;color:#1a1a1a;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow:0 2px 6px rgba(161,29,44,0.05);
+  }
+  .card-top{
+    display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;
+    gap:10px;
+  }
+  .card-top h3{margin:0;font-size:16px;color:#1a1a1a;}
+  .badge{
+    font-size:11px;font-weight:700;color:#fff;padding:5px 10px;border-radius:12px;
+    white-space:nowrap;text-transform:uppercase;letter-spacing:.3px;
+  }
+  .badge.Running{background:var(--red);}
+  .badge.Stopped{background:var(--orange);}
+  .badge.Active{background:#3b3b46;}
+  .badge.Finished{background:var(--green);}
+  .badge.Complete{background:var(--green);}
+  .badge.None{background:#9a9a9a;}
+  .badge.Idle{background:#9a9a9a;}
+  .badge.Maintenance{background:var(--purple);}
+  .dates{font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .progress-track{
+    height:8px;background:#f3dede;border-radius:6px;overflow:hidden;margin-bottom:8px;
+  }
+  .progress-fill{height:100%;background:var(--red);}
+  .progress-fill.done{background:var(--green);}
+  .steps-count{font-size:12px;color:#333;}
+  .empty{
+    text-align:center;color:var(--muted);font-size:14px;padding:40px 10px;
+  }
+  footer{
+    display:flex;
+    border-top:2px solid var(--red);
+    background:#fff;
+  }
+  .nav-btn{
+    flex:1;background:none;border:none;padding:10px 4px 12px;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    color:var(--red);font-size:11px;cursor:pointer;font-weight:600;
+  }
+  .nav-btn .ic{font-size:18px;}
+  .nav-btn.active{color:var(--red-dark);}
+  .nav-btn.active .ic{filter:none;}
+  .nav-btn.plus{color:var(--red);}
+
+  .machine-status{font-size:12px;color:var(--muted);}
+  .machine-actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
+
+  .form-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:16px;margin-bottom:16px;
+  }
+  .form-card h2{font-size:16px;color:var(--red);margin:0 0 10px;border-bottom:1px solid var(--border);padding-bottom:10px;}
+  input, select, textarea{
+    width:100%;padding:10px 12px;border:1px solid #e2c9c9;border-radius:8px;
+    font-size:14px;margin-bottom:10px;font-family:inherit;background:#fff;color:#222;
+  }
+  textarea{resize:vertical;min-height:60px;}
+  .row2{display:flex;gap:10px;}
+  .row2 > div{flex:1;}
+  .row2 label, .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+  .btn{
+    background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;
+    font-weight:700;font-size:14px;cursor:pointer;width:100%;
+  }
+  .btn.green{background:var(--green);}
+  .btn.purple{background:var(--purple);}
+  .btn.small{width:auto;padding:6px 12px;font-size:12px;font-weight:600;}
+  .btn.grey{background:#8a8a8a;}
+  .step-row{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--cream);border-radius:8px;padding:10px 12px;margin-bottom:8px;
+    font-size:13px;
+  }
+  .step-row .actions{display:flex;gap:6px;}
+  .step-row button{
+    border:1px solid #ccc;background:#fff;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;
+  }
+  .step-row button.del{color:var(--red);border-color:var(--red);}
+
+  .detail-step{
+    background:var(--panel);border-left:5px solid var(--muted);border-radius:10px;
+    padding:14px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,0.04);
+  }
+  .detail-step.complete{border-left-color:var(--green);}
+  .detail-step.active-step{border-left-color:var(--red);}
+  .detail-step.none-step{border-left-color:#bbb;}
+  .detail-step-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .detail-step-top h4{margin:0;font-size:15px;}
+  .detail-meta{font-size:12px;color:var(--muted);}
+  .inline-form{margin-top:10px;}
+
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .25s;z-index:50;
+  }
+  .toast.show{opacity:1;}
+  select{-webkit-appearance:none;appearance:none;}
+  .hint{font-size:11px;color:var(--muted);margin:-4px 0 10px;}
+  .empty.small{padding:16px;}
+
+  /* Login screen */
+  .login-wrap{
+    flex:1;display:flex;flex-direction:column;justify-content:center;
+    padding:30px 26px;
+  }
+  .login-wrap h1{color:var(--red);font-size:24px;margin:0 0 4px;}
+  .login-wrap p.sub{color:var(--muted);font-size:13px;margin:0 0 22px;}
+  .login-error{color:var(--red);font-size:13px;margin:-4px 0 10px;min-height:16px;}
+  .login-loading{text-align:center;color:var(--muted);padding:40px;}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="login-loading" id="bootLoading">Loading…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ SUPABASE CLIENT ============ */
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============ RENDER: LOGIN ============ */
+function renderLogin(errorMsg){
+  const phone = document.getElementById('phone');
+  phone.innerHTML = `
+    <div class="login-wrap">
+      <h1>APE</h1>
+      <p class="sub">Sign in to access your project tracker.</p>
+      <div class="login-error">${errorMsg ? escapeHtml(errorMsg) : ''}</div>
+      <input type="text" id="loginUser" placeholder="Email" autocomplete="username">
+      <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
+      <button class="btn" id="loginBtn">LOG IN</button>
+    </div>`;
+
+  const doLogin = async ()=>{
+    const email = document.getElementById('loginUser').value.trim();
+    const password = document.getElementById('loginPass').value;
+    if(!email || !password){ renderLogin('Enter your email and password'); return; }
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ renderLogin('Incorrect email or password'); return; }
+    await bootApp();
+  };
+  document.getElementById('loginBtn').onclick = doLogin;
+  phone.querySelectorAll('input').forEach(inp=>{
+    inp.onkeydown = e=>{ if(e.key==='Enter') doLogin(); };
+  });
+}
+
+/* ============ APP SHELL (rendered after login) ============ */
+function renderAppShell(){
+  const phone = document.getElementById('phone');
+  phone.innerHTML = `
+    <header>
+      <div class="logo">APE</div>
+      <div class="icons">
+        <button class="logout-link" id="logoutBtn">Log out</button>
+      </div>
+    </header>
+    <div id="subheader"></div>
+    <main id="main"></main>
+    <footer>
+      <button class="nav-btn" data-view="projects"><span class="ic">📁</span>Projects</button>
+      <button class="nav-btn" data-view="completed"><span class="ic">✔️</span>Completed</button>
+      <button class="nav-btn" data-view="machines"><span class="ic">🖥️</span>Machines</button>
+      <button class="nav-btn" data-view="add"><span class="ic">➕</span>Add Project</button>
+    </footer>`;
+
+  document.getElementById('logoutBtn').onclick = async ()=>{
+    await sb.auth.signOut();
+    renderLogin();
+  };
+
+  document.querySelectorAll('.nav-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      state.view = btn.dataset.view;
+      state.currentProjectId = null;
+      state.editingProject = btn.dataset.view === 'add' ? null : state.editingProject;
+      render();
+    };
+  });
+}
+
+/* ============ DATA LAYER (Supabase-backed) ============ */
+function defaultData(){
+  return { projects: [], machines: [] };
+}
+
+let DB = defaultData();
+let currentUserId = null;
+
+async function loadData(){
+  const { data: { user } } = await sb.auth.getUser();
+  currentUserId = user.id;
+
+  const { data, error } = await sb
+    .from('app_data')
+    .select('data')
+    .eq('user_id', currentUserId)
+    .maybeSingle();
+
+  if(error) throw error;
+  DB = data && data.data ? Object.assign(defaultData(), data.data) : defaultData();
+}
+
+async function saveData(data){
+  try{
+    const { error } = await sb
+      .from('app_data')
+      .upsert({ user_id: currentUserId, data, updated_at: new Date().toISOString() });
+    if(error) throw error;
+    return true;
+  }catch(e){
+    console.error('Save failed', e);
+    showToast('Could not save — check your connection');
+    return false;
+  }
+}
+
+/* ============ APP STATE ============ */
+let state = {
+  view: 'projects',
+  currentProjectId: null,
+  editingProject: null,
+  activeStepInputId: null,
+  maintenanceEditId: null
+};
+
+/* ============ HELPERS ============ */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+function fmtDate(str){
+  if(!str) return '';
+  const [y,m,d] = str.split('-');
+  if(!y) return str;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${d} ${months[parseInt(m,10)-1]} ${y}`;
+}
+function projectProgress(p){
+  const total = p.steps.length;
+  const done = p.steps.filter(s=>s.status==='Complete').length;
+  return {done, total};
+}
+function escapeHtml(str){
+  return (str||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ============ PROJECT STATUS LOGIC ============ */
+function recomputeProjectStatus(p){
+  const total = p.steps.length;
+  if(total === 0){ p.status = 'Active'; return; }
+  const doneCount = p.steps.filter(s=>s.status==='Complete').length;
+  if(doneCount === total){ p.status = 'Complete'; return; }
+  const anyRunning = p.steps.some(s=>s.status==='Active');
+  if(anyRunning){ p.status = 'Running'; return; }
+  if(doneCount > 0){ p.status = 'Stopped'; return; }
+  p.status = 'Active';
+}
+
+/* ============ MACHINE STATUS LOGIC ============ */
+function computeMachineStatus(m){
+  if(m.maintenance) return 'Maintenance';
+  let linked = false;
+  for(const p of DB.projects){
+    if(p.status === 'Complete') continue;
+    for(const s of p.steps){
+      if(s.machine === m.name){
+        linked = true;
+        if(s.status === 'Active') return 'Running';
+      }
+    }
+  }
+  return linked ? 'Stopped' : 'Idle';
+}
+
+/* ============ RENDER: NAV ============ */
+function renderNav(){
+  document.querySelectorAll('.nav-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.view === state.view || (state.view==='detail' && btn.dataset.view==='projects'));
+  });
+}
+
+function renderSubheader(){
+  const sub = document.getElementById('subheader');
+  if(state.view === 'detail'){
+    const p = DB.projects.find(x=>x.id===state.currentProjectId);
+    sub.innerHTML = `
+      <div class="back-row">
+        <button class="back-btn" id="backBtn">← Back</button>
+        <button class="edit-btn" id="editProjectBtn">Edit Project</button>
+      </div>`;
+    sub.querySelector('#backBtn').onclick = ()=>{ state.view='projects'; state.currentProjectId=null; render(); };
+    sub.querySelector('#editProjectBtn').onclick = ()=>{ startEditProject(p.id); };
+  } else {
+    sub.innerHTML = '';
+  }
+}
+
+function render(){
+  renderNav();
+  renderSubheader();
+  const main = document.getElementById('main');
+  if(state.view === 'projects') return renderProjectsList(main);
+  if(state.view === 'completed') return renderCompletedList(main);
+  if(state.view === 'machines') return renderMachines(main);
+  if(state.view === 'add') return renderAddProject(main);
+  if(state.view === 'detail') return renderProjectDetail(main);
+}
+
+function renderProjectsList(main){
+  const active = DB.projects.filter(p=>p.status !== 'Complete');
+  let html = `<h1 class="page-title">Active Projects</h1>`;
+  if(active.length===0){
+    html += `<div class="empty">No active projects yet.<br>Tap "Add Project" below to start one.</div>`;
+  } else {
+    active.forEach(p=>{
+      const {done,total} = projectProgress(p);
+      const pct = total ? Math.round((done/total)*100) : 0;
+      html += `
+        <div class="card" data-id="${p.id}">
+          <div class="card-top">
+            <h3>${escapeHtml(p.name)}</h3>
+            <span class="badge ${p.status}">${p.status}</span>
+          </div>
+          <div class="dates">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div class="steps-count">${done} / ${total} Steps Completed</div>
+        </div>`;
+    });
+  }
+  main.innerHTML = html;
+  main.querySelectorAll('.card').forEach(c=>{
+    c.onclick = ()=>{ state.view='detail'; state.currentProjectId=c.dataset.id; render(); };
+  });
+}
+
+function renderCompletedList(main){
+  const done = DB.projects.filter(p=>p.status === 'Complete');
+  let html = `<h1 class="page-title">Completed Projects</h1>`;
+  if(done.length===0){
+    html += `<div class="empty">No completed projects yet.</div>`;
+  } else {
+    done.forEach(p=>{
+      html += `
+        <div class="card" data-id="${p.id}">
+          <div class="card-top">
+            <h3>${escapeHtml(p.name)}</h3>
+            <span class="badge Complete">COMPLETE</span>
+          </div>
+          <div class="dates">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
+          <div class="progress-track"><div class="progress-fill done" style="width:100%"></div></div>
+          <div class="steps-count">${p.steps.length} / ${p.steps.length} Steps Completed</div>
+        </div>`;
+    });
+  }
+  main.innerHTML = html;
+  main.querySelectorAll('.card').forEach(c=>{
+    c.onclick = ()=>{ state.view='detail'; state.currentProjectId=c.dataset.id; render(); };
+  });
+}
+
+function renderMachines(main){
+  let html = `<h1 class="page-title">Machines</h1>`;
+  html += `
+    <div class="form-card">
+      <h2>Add Machine</h2>
+      <input type="text" id="newMachineName" placeholder="Machine Name">
+      <button class="btn" id="addMachineBtn">ADD MACHINE</button>
+    </div>`;
+
+  if(DB.machines.length === 0){
+    html += `<div class="empty">No machines yet.<br>Add one above to track it here and use it in project steps.</div>`;
+  } else {
+    DB.machines.forEach(m=>{
+      const status = computeMachineStatus(m);
+      html += `
+        <div class="card" data-mid="${m.id}">
+          <div class="card-top">
+            <h3>${escapeHtml(m.name)}</h3>
+            <span class="badge ${status}">${status.toUpperCase()}</span>
+          </div>
+          <div class="machine-status">
+            ${m.maintenance
+              ? escapeHtml(m.maintenanceNote || 'No maintenance notes added.')
+              : 'Status is tracked automatically from linked project steps.'}
+          </div>
+          <div class="machine-actions">
+            ${m.maintenance
+              ? `<button class="btn small purple edit-maintenance" data-id="${m.id}">Edit Notes</button>
+                 <button class="btn small green return-service" data-id="${m.id}">Return to Service</button>`
+              : `<button class="btn small purple start-maintenance" data-id="${m.id}">Start Maintenance</button>`}
+            <button class="btn small remove-machine" data-id="${m.id}" style="border-color:var(--red);color:var(--red);background:#fff;">Remove</button>
+          </div>
+          ${state.maintenanceEditId === m.id ? `
+            <div class="inline-form">
+              <textarea id="maintNote_${m.id}" placeholder="Maintenance notes (technician, expected completion, etc.)">${escapeHtml(m.maintenanceNote||'')}</textarea>
+              <button class="btn green save-maintenance" data-id="${m.id}">Save Notes</button>
+            </div>` : ''}
+        </div>`;
+    });
+  }
+
+  main.innerHTML = html;
+
+  document.getElementById('addMachineBtn').onclick = async ()=>{
+    const input = document.getElementById('newMachineName');
+    const name = input.value.trim();
+    if(!name){ showToast('Machine name is required'); return; }
+    if(DB.machines.some(m=>m.name.toLowerCase()===name.toLowerCase())){
+      showToast('A machine with that name already exists');
+      return;
+    }
+    DB.machines.push({ id: uid(), name, maintenance:false, maintenanceNote:'' });
+    await saveData(DB);
+    showToast('Machine added');
+    render();
+  };
+
+  main.querySelectorAll('.start-maintenance').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const m = DB.machines.find(x=>x.id===btn.dataset.id);
+      m.maintenance = true;
+      state.maintenanceEditId = m.id;
+      await saveData(DB);
+      render();
+    };
+  });
+  main.querySelectorAll('.edit-maintenance').forEach(btn=>{
+    btn.onclick = ()=>{ state.maintenanceEditId = btn.dataset.id; render(); };
+  });
+  main.querySelectorAll('.save-maintenance').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const m = DB.machines.find(x=>x.id===btn.dataset.id);
+      m.maintenanceNote = document.getElementById('maintNote_'+m.id).value.trim();
+      state.maintenanceEditId = null;
+      await saveData(DB);
+      showToast('Maintenance notes saved');
+      render();
+    };
+  });
+  main.querySelectorAll('.return-service').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const m = DB.machines.find(x=>x.id===btn.dataset.id);
+      m.maintenance = false;
+      m.maintenanceNote = '';
+      state.maintenanceEditId = null;
+      await saveData(DB);
+      showToast(`${m.name} returned to automated tracking`);
+      render();
+    };
+  });
+  main.querySelectorAll('.remove-machine').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const m = DB.machines.find(x=>x.id===btn.dataset.id);
+      if(confirm(`Remove ${m.name}? This won't remove it from steps that already reference it.`)){
+        DB.machines = DB.machines.filter(x=>x.id!==m.id);
+        await saveData(DB);
+        showToast('Machine removed');
+        render();
+      }
+    };
+  });
+}
+
+function newDraft(){
+  return { id:null, name:'', startDate:'', endDate:'', status:'Active', steps:[] };
+}
+
+function startEditProject(projectId){
+  const p = DB.projects.find(x=>x.id===projectId);
+  state.editingProject = JSON.parse(JSON.stringify(p));
+  state.view = 'add';
+  render();
+}
+
+function renderAddProject(main){
+  if(!state.editingProject) state.editingProject = newDraft();
+  const d = state.editingProject;
+  const isEdit = !!d.id;
+
+  let stepsHtml = '';
+  if(d.steps.length===0){
+    stepsHtml = `<div class="empty small">No steps added yet.</div>`;
+  } else {
+    d.steps.forEach((s, idx)=>{
+      stepsHtml += `
+        <div class="step-row">
+          <span>${idx+1}. ${escapeHtml(s.name)} ${s.machine? '('+escapeHtml(s.machine)+')':''}</span>
+          <span class="actions">
+            <button class="edit-step" data-idx="${idx}">Edit</button>
+            <button class="del del-step" data-idx="${idx}">Del</button>
+          </span>
+        </div>`;
+    });
+  }
+
+  const machineOptions = DB.machines.map(m=>`<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('');
+
+  main.innerHTML = `
+    <div class="form-card">
+      <h2>Project Details</h2>
+      <input type="text" id="pName" placeholder="Project Name" value="${escapeHtml(d.name)}">
+      <div class="row2">
+        <div><label>Start Date</label><input type="date" id="pStart" value="${d.startDate||''}"></div>
+        <div><label>End Date</label><input type="date" id="pEnd" value="${d.endDate||''}"></div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <h2>Add Step</h2>
+      <input type="number" id="stepNo" placeholder="Step No." min="1">
+      <input type="text" id="stepName" placeholder="Step Name/Function">
+      <select id="stepMachine">
+        <option value="">Select Machine</option>
+        ${machineOptions}
+      </select>
+      ${DB.machines.length===0 ? `<div class="hint">No machines yet — add one in the Machines tab to link equipment to steps.</div>` : ''}
+      <button class="btn" id="saveStepBtn">SAVE STEP</button>
+    </div>
+
+    <div class="form-card">
+      <h2>Saved Steps</h2>
+      ${stepsHtml}
+    </div>
+
+    <button class="btn green" id="commitBtn">${isEdit ? 'SAVE PROJECT' : 'COMMIT PROJECT'}</button>
+    ${isEdit ? `<button class="btn grey" id="cancelEditBtn" style="margin-top:10px;">Cancel</button>
+    <button class="btn" id="deleteProjectBtn" style="margin-top:10px;background:#b3212f;">Delete Project</button>` : ''}
+  `;
+
+  document.getElementById('pName').oninput = e => d.name = e.target.value;
+  document.getElementById('pStart').oninput = e => d.startDate = e.target.value;
+  document.getElementById('pEnd').oninput = e => d.endDate = e.target.value;
+
+  document.getElementById('saveStepBtn').onclick = ()=>{
+    const no = document.getElementById('stepNo').value;
+    const name = document.getElementById('stepName').value.trim();
+    const machine = document.getElementById('stepMachine').value;
+    if(!name){ showToast('Step name is required'); return; }
+    d.steps.push({
+      id: uid(),
+      stepNo: no ? parseInt(no,10) : d.steps.length+1,
+      name, machine,
+      status: 'None',
+      doneBy: '', time: '', description: ''
+    });
+    d.steps.sort((a,b)=> (a.stepNo||0) - (b.stepNo||0));
+    render();
+  };
+
+  main.querySelectorAll('.del-step').forEach(btn=>{
+    btn.onclick = ()=>{ d.steps.splice(parseInt(btn.dataset.idx,10),1); render(); };
+  });
+  main.querySelectorAll('.edit-step').forEach(btn=>{
+    btn.onclick = ()=>{
+      const s = d.steps[parseInt(btn.dataset.idx,10)];
+      document.getElementById('stepNo').value = s.stepNo || '';
+      document.getElementById('stepName').value = s.name;
+      document.getElementById('stepMachine').value = s.machine || '';
+      d.steps.splice(parseInt(btn.dataset.idx,10),1);
+      render();
+    };
+  });
+
+  document.getElementById('commitBtn').onclick = async ()=>{
+    if(!d.name.trim()){ showToast('Project name is required'); return; }
+    if(!d.startDate || !d.endDate){ showToast('Start and end dates are required'); return; }
+    if(d.steps.length===0){ showToast('Add at least one step'); return; }
+
+    recomputeProjectStatus(d);
+
+    if(isEdit){
+      const idx = DB.projects.findIndex(x=>x.id===d.id);
+      DB.projects[idx] = d;
+    } else {
+      d.id = uid();
+      DB.projects.push(d);
+    }
+    await saveData(DB);
+    showToast(isEdit ? 'Project saved' : 'Project created');
+    state.editingProject = null;
+    state.view = isEdit ? 'detail' : 'projects';
+    state.currentProjectId = d.id;
+    render();
+  };
+
+  if(isEdit){
+    document.getElementById('cancelEditBtn').onclick = ()=>{
+      state.editingProject = null;
+      state.view = 'detail';
+      render();
+    };
+    document.getElementById('deleteProjectBtn').onclick = async ()=>{
+      if(confirm('Delete this project permanently?')){
+        DB.projects = DB.projects.filter(x=>x.id!==d.id);
+        await saveData(DB);
+        state.editingProject = null;
+        state.view = 'projects';
+        render();
+      }
+    };
+  }
+}
+
+function renderProjectDetail(main){
+  const p = DB.projects.find(x=>x.id===state.currentProjectId);
+  if(!p){ state.view='projects'; return render(); }
+
+  let html = `
+    <h1 class="page-title" style="margin-bottom:2px;">${escapeHtml(p.name)}</h1>
+    <div class="dates" style="margin-bottom:6px;">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
+    <div style="margin-bottom:14px;"><span class="badge ${p.status}">${p.status}</span></div>
+  `;
+
+  p.steps.forEach((s, idx)=>{
+    const cls = s.status==='Complete' ? 'complete' : (s.status==='Active' ? 'active-step' : 'none-step');
+    html += `<div class="detail-step ${cls}">
+      <div class="detail-step-top">
+        <h4>${idx+1}. ${escapeHtml(s.name)}${s.machine ? ' ('+escapeHtml(s.machine)+')' : ''}</h4>
+        <span class="badge ${s.status}">${s.status}</span>
+      </div>`;
+
+    if(s.status === 'Complete'){
+      html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy||'—')} ${s.time? '| '+escapeHtml(s.time):''} ${s.description? '| '+escapeHtml(s.description):''}</div>`;
+      html += `<div style="margin-top:8px;"><button class="btn small edit-step-status" data-id="${s.id}">Reopen step</button></div>`;
+    } else if(state.activeStepInputId === s.id){
+      html += `
+        <div class="inline-form">
+          <input type="text" id="doneBy_${s.id}" placeholder="Done by?" value="${escapeHtml(s.doneBy||'')}">
+          <select id="statusSel_${s.id}">
+            <option value="None" ${s.status==='None'?'selected':''}>None</option>
+            <option value="Active" ${s.status==='Active'?'selected':''}>Active</option>
+            <option value="Complete">Complete</option>
+          </select>
+          <textarea id="desc_${s.id}" placeholder="Description">${escapeHtml(s.description||'')}</textarea>
+          <button class="btn green mark-done" data-id="${s.id}">Done</button>
+        </div>`;
+    } else {
+      html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy) || 'None'}</div>`;
+      html += `<div style="margin-top:8px;"><button class="btn small open-step" data-id="${s.id}">Fill in</button></div>`;
+    }
+    html += `</div>`;
+  });
+
+  main.innerHTML = html;
+
+  main.querySelectorAll('.open-step').forEach(btn=>{
+    btn.onclick = ()=>{ state.activeStepInputId = btn.dataset.id; render(); };
+  });
+
+  main.querySelectorAll('.edit-step-status').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const s = p.steps.find(x=>x.id===btn.dataset.id);
+      s.status = 'Active';
+      recomputeProjectStatus(p);
+      await saveData(DB);
+      state.activeStepInputId = s.id;
+      render();
+    };
+  });
+
+  main.querySelectorAll('.mark-done').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const s = p.steps.find(x=>x.id===btn.dataset.id);
+      s.doneBy = document.getElementById('doneBy_'+s.id).value.trim();
+      s.status = document.getElementById('statusSel_'+s.id).value;
+      s.description = document.getElementById('desc_'+s.id).value.trim();
+      if(s.status === 'Complete'){
+        const now = new Date();
+        s.time = now.getDate()+' - '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      }
+      state.activeStepInputId = null;
+
+      const wasFinished = p.status === 'Complete';
+      recomputeProjectStatus(p);
+      if(p.status === 'Complete' && !wasFinished){
+        showToast('All steps complete — project moved to Completed!');
+      }
+      await saveData(DB);
+      render();
+    };
+  });
+}
+
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+/* ============ BOOT ============ */
+async function bootApp(){
+  const phone = document.getElementById('phone');
+  phone.innerHTML = `<div class="login-loading">Loading your data…</div>`;
+  try{
+    await loadData();
+    DB.projects.forEach(recomputeProjectStatus);
+    renderAppShell();
+    render();
+  }catch(e){
+    console.error(e);
+    phone.innerHTML = `<div class="login-loading">Couldn't load your data.<br><br>
+      <button class="btn" onclick="bootApp()">Retry</button></div>`;
+  }
+}
+
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    bootApp();
+  } else {
+    renderLogin();
+  }
+})();
+</script>
+</body>
+</html>
