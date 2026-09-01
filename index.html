@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>APE — Project Tracker</title>
+<title>APE — Machine Build Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <style>
@@ -68,7 +68,7 @@
   .progress-fill.done{background:var(--green);}
   .steps-count{font-size:12px;color:#333;}
   .empty{text-align:center;color:var(--muted);font-size:14px;padding:40px 10px;}
-  .empty.small{padding:16px;}
+  .empty.small{padding:12px;font-size:12.5px;}
   footer{display:flex;border-top:2px solid var(--red);background:#fff;}
   .nav-btn{flex:1;background:none;border:none;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--red);font-size:11px;cursor:pointer;font-weight:600;}
   .nav-btn .ic{font-size:18px;}
@@ -90,13 +90,13 @@
   .btn.small{width:auto;padding:6px 12px;font-size:12px;font-weight:600;}
   .btn.grey{background:#8a8a8a;}
 
-  .detail-step{background:var(--panel);border-left:5px solid var(--muted);border-radius:10px;padding:12px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,0.04);}
+  .detail-step{background:var(--panel);border-left:5px solid var(--muted);border-radius:10px;padding:10px 12px;margin-bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,0.04);}
   .detail-step.complete{border-left-color:var(--green);}
   .detail-step.active-step{border-left-color:var(--red);}
   .detail-step.none-step{border-left-color:#bbb;}
   .detail-step-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px;}
-  .detail-step-top h4{margin:0;font-size:14px;}
-  .detail-meta{font-size:12px;color:var(--muted);}
+  .detail-step-top h4{margin:0;font-size:13.5px;}
+  .detail-meta{font-size:11.5px;color:var(--muted);}
   .inline-form{margin-top:10px;}
 
   .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:50;}
@@ -110,23 +110,18 @@
   .login-error{color:var(--red);font-size:13px;margin:-4px 0 10px;min-height:16px;}
   .login-loading{text-align:center;color:var(--muted);padding:40px;}
 
-  /* Tree: machine > part > steps */
-  .machine-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;}
-  .machine-head{display:flex;align-items:center;gap:8px;padding:14px;cursor:pointer;background:#fff;}
-  .machine-head h3{margin:0;flex:1;font-size:15px;color:#1a1a1a;}
-  .machine-progress{font-size:12px;color:var(--muted);padding:0 14px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .machine-body{padding:0 14px 14px;}
-  .part-card{background:var(--cream);border:1px solid var(--border);border-radius:10px;margin:10px 0;overflow:hidden;}
-  .part-head{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;}
-  .part-head h4{margin:0;flex:1;font-size:14px;color:#1a1a1a;}
-  .part-body{padding:0 12px 12px;}
-  .part-meta{font-size:12px;color:var(--muted);padding:0 12px 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  /* Tree: machine > part (recursive, folder-in-folder) > steps */
+  .part-card{background:var(--cream);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden;}
+  .part-head{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;}
+  .part-head h4{margin:0;flex:1;font-size:13.5px;color:#1a1a1a;}
+  .part-body{padding:0 11px 11px;}
+  .part-meta{font-size:11.5px;color:var(--muted);padding:0 11px 7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .collapse-ic{font-size:11px;color:var(--muted);width:12px;text-align:center;flex-shrink:0;}
-  .mini-progress-track{height:6px;background:#f3dede;border-radius:4px;overflow:hidden;margin:0 12px 6px;}
+  .mini-progress-track{height:5px;background:#f3dede;border-radius:4px;overflow:hidden;margin:0 11px 5px;}
   .mini-progress-fill{height:100%;background:var(--red);}
   .mini-progress-fill.done{background:var(--green);}
-  .tree-add-form{padding:12px;border-top:1px dashed var(--border);margin-top:4px;}
-  .tree-label{font-weight:700;font-size:13px;color:var(--red);margin-bottom:8px;}
+  .tree-add-form{padding:10px;border-top:1px dashed var(--border);margin-top:4px;}
+  .tree-label{font-weight:700;font-size:12.5px;color:var(--red);margin-bottom:6px;}
   .remove-x{border:1px solid var(--red);background:#fff;color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;}
 </style>
 </head>
@@ -148,7 +143,7 @@ function renderLogin(errorMsg){
   phone.innerHTML = `
     <div class="login-wrap">
       <h1>APE</h1>
-      <p class="sub">Sign in to access your project tracker.</p>
+      <p class="sub">Sign in to access your machine build tracker.</p>
       <div class="login-error">${errorMsg ? escapeHtml(errorMsg) : ''}</div>
       <input type="text" id="loginUser" placeholder="Email" autocomplete="username">
       <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
@@ -180,10 +175,10 @@ function renderAppShell(){
     <div id="subheader"></div>
     <main id="main"></main>
     <footer>
-      <button class="nav-btn" data-view="projects"><span class="ic">📁</span>Projects</button>
+      <button class="nav-btn" data-view="machines"><span class="ic">🏭</span>Machines</button>
       <button class="nav-btn" data-view="completed"><span class="ic">✔️</span>Completed</button>
       <button class="nav-btn" data-view="equipment"><span class="ic">🖥️</span>Equipment</button>
-      <button class="nav-btn" data-view="add"><span class="ic">➕</span>Add Project</button>
+      <button class="nav-btn" data-view="add"><span class="ic">➕</span>Add Machine</button>
     </footer>`;
 
   document.getElementById('logoutBtn').onclick = async ()=>{
@@ -194,8 +189,8 @@ function renderAppShell(){
   document.querySelectorAll('.nav-btn').forEach(btn=>{
     btn.onclick = ()=>{
       state.view = btn.dataset.view;
-      state.currentProjectId = null;
-      state.editingProject = btn.dataset.view === 'add' ? null : state.editingProject;
+      state.currentMachineId = null;
+      state.editingMachine = btn.dataset.view === 'add' ? null : state.editingMachine;
       render();
     };
   });
@@ -203,38 +198,77 @@ function renderAppShell(){
 
 /* ============ DATA LAYER (Supabase-backed) ============ */
 function defaultData(){
-  return { projects: [], equipment: [] };
+  return { machines: [], equipment: [] };
+}
+
+// Recursively make sure every part node has the shape { id, name, status, steps[], parts[] }
+function ensurePartShape(op){
+  return {
+    id: op.id || uid(),
+    name: op.name,
+    status: op.status || 'Active',
+    steps: (op.steps || []).map(s=>({...s})),
+    parts: (op.parts || []).map(ensurePartShape)
+  };
+}
+// An old "machine" (the middle tier that used to sit inside a project) becomes a Part
+// that holds its old parts as children — same data, one renamed layer.
+function convertOldMachineToPart(om){
+  return {
+    id: om.id || uid(),
+    name: om.name,
+    status: om.status || 'Active',
+    steps: [],
+    parts: (om.parts || []).map(ensurePartShape)
+  };
+}
+// An old "project" becomes the new top-level Machine.
+function convertProjectToMachine(proj){
+  let oldMachines = proj.machines;
+  if(!oldMachines && proj.steps){
+    // very old flat shape: project.steps directly, step.machine = equipment name
+    oldMachines = [{
+      id: uid(), name: 'Part 1', status: proj.status,
+      parts: [{
+        id: uid(), name: 'Part 1', status: proj.status,
+        steps: proj.steps.map(s=>({
+          id: s.id, stepNo: s.stepNo, name: s.name,
+          equipment: s.machine || '', status: s.status,
+          doneBy: s.doneBy || '', time: s.time || '', description: s.description || ''
+        }))
+      }]
+    }];
+  }
+  return {
+    id: proj.id || uid(), name: proj.name, startDate: proj.startDate, endDate: proj.endDate,
+    status: proj.status || 'Active',
+    parts: (oldMachines || []).map(convertOldMachineToPart)
+  };
 }
 
 // Migrates data saved under older versions of this app into the current shape.
 function migrateData(raw){
-  const d = Object.assign(defaultData(), raw);
+  const d = defaultData();
 
-  // old field name "machines" was the equipment list before it was renamed "equipment"
-  if(raw.machines && !raw.equipment){
+  // ---- equipment (the physical tools list) ----
+  if(raw.equipment){
+    d.equipment = raw.equipment;
+  } else if(Array.isArray(raw.machines) && raw.machines.length && !('parts' in raw.machines[0]) && !('startDate' in raw.machines[0])){
+    // super old shape: "machines" key used to mean the equipment list
     d.equipment = raw.machines;
   }
 
-  d.projects = (d.projects || []).map(p=>{
-    if(p.machines) return p; // already in current tree shape
-
-    // old flat shape: project.steps directly, step.machine = equipment name
-    if(p.steps){
-      const steps = p.steps.map(s=>({
-        id: s.id, stepNo: s.stepNo, name: s.name,
-        equipment: s.machine || '', status: s.status,
-        doneBy: s.doneBy || '', time: s.time || '', description: s.description || ''
-      }));
-      return {
-        id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate,
-        status: p.status,
-        machines: [{ id: uid(), name: 'Machine 1', status: p.status, parts: [
-          { id: uid(), name: 'Part 1', status: p.status, steps }
-        ]}]
-      };
-    }
-    return Object.assign({machines:[]}, p);
-  });
+  // ---- machines (the top-level build, formerly "projects") ----
+  if(Array.isArray(raw.projects)){
+    d.machines = raw.projects.map(convertProjectToMachine);
+  } else if(Array.isArray(raw.machines) && raw.machines.length && ('parts' in raw.machines[0])){
+    // already current shape
+    d.machines = raw.machines.map(m=>({
+      id: m.id || uid(), name: m.name, startDate: m.startDate, endDate: m.endDate,
+      status: m.status || 'Active',
+      parts: (m.parts || []).map(ensurePartShape)
+    }));
+  }
 
   return d;
 }
@@ -272,12 +306,11 @@ async function saveData(data){
 
 /* ============ APP STATE ============ */
 let state = {
-  view: 'projects',
-  currentProjectId: null,
-  editingProject: null,
+  view: 'machines',
+  currentMachineId: null,
+  editingMachine: null,
   activeStepInputId: null,
   maintenanceEditId: null,
-  collapsedMachines: {},
   collapsedParts: {}
 };
 
@@ -300,18 +333,53 @@ function escapeHtml(str){
 }
 function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
 
-/* ============ STATUS LOGIC (Active / Running / Stopped / Complete) ============ */
-function recomputePartStatus(part){
-  const total = part.steps.length;
-  if(total === 0){ part.status = 'Active'; return; }
-  const doneCount = part.steps.filter(s=>s.status==='Complete').length;
-  if(doneCount === total){ part.status = 'Complete'; return; }
-  const anyRunning = part.steps.some(s=>s.status==='Active');
-  if(anyRunning){ part.status = 'Running'; return; }
-  if(doneCount > 0){ part.status = 'Stopped'; return; }
-  part.status = 'Active';
+/* ============ RECURSIVE PART-TREE HELPERS ============ */
+function newPart(name){
+  return { id: uid(), name, status: 'Active', steps: [], parts: [] };
+}
+function findPart(parts, id){
+  for(const p of parts){
+    if(p.id === id) return p;
+    const found = findPart(p.parts, id);
+    if(found) return found;
+  }
+  return null;
+}
+function removePart(parts, id){
+  const idx = parts.findIndex(p=>p.id===id);
+  if(idx > -1){ parts.splice(idx,1); return true; }
+  for(const p of parts){ if(removePart(p.parts, id)) return true; }
+  return false;
+}
+function countAllParts(parts){
+  let n = 0;
+  parts.forEach(p=>{ n += 1; n += countAllParts(p.parts); });
+  return n;
+}
+// Flat list of every part in the tree that has its own steps, for the "clone steps from" dropdown.
+function collectCloneOptions(parts, prefix){
+  let opts = [];
+  parts.forEach(p=>{
+    const label = prefix ? prefix + ' / ' + p.name : p.name;
+    if(p.steps.length > 0) opts.push({ id: p.id, label, count: p.steps.length });
+    opts = opts.concat(collectCloneOptions(p.parts, label));
+  });
+  return opts;
+}
+function walkSteps(parts, cb){
+  parts.forEach(p=>{ p.steps.forEach(cb); walkSteps(p.parts, cb); });
 }
 
+/* ============ STATUS LOGIC (Active / Running / Stopped / Complete) ============ */
+function stepsOwnStatus(steps){
+  const total = steps.length;
+  if(total === 0) return null;
+  const doneCount = steps.filter(s=>s.status==='Complete').length;
+  if(doneCount === total) return 'Complete';
+  if(steps.some(s=>s.status==='Active')) return 'Running';
+  if(doneCount > 0) return 'Stopped';
+  return 'Active';
+}
 // Rolls a set of child statuses up to a parent status.
 function aggregateStatus(statuses){
   if(statuses.length === 0) return 'Active';
@@ -320,19 +388,22 @@ function aggregateStatus(statuses){
   if(statuses.some(s=>s!=='Active')) return 'Stopped';
   return 'Active';
 }
-
-function recomputeAll(project){
-  project.machines.forEach(machine=>{
-    machine.parts.forEach(recomputePartStatus);
-    machine.status = aggregateStatus(machine.parts.map(p=>p.status));
-  });
-  project.status = aggregateStatus(project.machines.map(m=>m.status));
+function recomputePart(part){
+  part.parts.forEach(recomputePart);
+  const own = stepsOwnStatus(part.steps);
+  const childStatuses = part.parts.map(cp=>cp.status);
+  part.status = aggregateStatus(own ? [own, ...childStatuses] : childStatuses);
+}
+function recomputeAll(machine){
+  machine.parts.forEach(recomputePart);
+  machine.status = aggregateStatus(machine.parts.map(p=>p.status));
 }
 
 /* ============ PROGRESS HELPERS ============ */
 function partProgress(part){
-  const total = part.steps.length;
-  const done = part.steps.filter(s=>s.status==='Complete').length;
+  let done = part.steps.filter(s=>s.status==='Complete').length;
+  let total = part.steps.length;
+  part.parts.forEach(cp=>{ const pr = partProgress(cp); done += pr.done; total += pr.total; });
   return {done, total};
 }
 function machineProgress(machine){
@@ -340,28 +411,19 @@ function machineProgress(machine){
   machine.parts.forEach(p=>{ const pr = partProgress(p); done+=pr.done; total+=pr.total; });
   return {done, total};
 }
-function projectProgress(project){
-  let done=0, total=0;
-  project.machines.forEach(m=>{ const pr = machineProgress(m); done+=pr.done; total+=pr.total; });
-  return {done, total};
-}
 
 /* ============ EQUIPMENT STATUS ============ */
 function computeEquipmentStatus(eq){
   if(eq.maintenance) return 'Maintenance';
   let linked = false;
-  for(const p of DB.projects){
-    if(p.status === 'Complete') continue;
-    for(const m of p.machines){
-      for(const part of m.parts){
-        for(const s of part.steps){
-          if(s.equipment === eq.name){
-            linked = true;
-            if(s.status === 'Active') return 'Running';
-          }
-        }
-      }
-    }
+  for(const m of DB.machines){
+    if(m.status === 'Complete') continue;
+    let anyActive = false, anyLinked = false;
+    walkSteps(m.parts, s=>{
+      if(s.equipment === eq.name){ anyLinked = true; if(s.status === 'Active') anyActive = true; }
+    });
+    if(anyLinked) linked = true;
+    if(anyActive) return 'Running';
   }
   return linked ? 'Stopped' : 'Idle';
 }
@@ -369,20 +431,20 @@ function computeEquipmentStatus(eq){
 /* ============ RENDER: NAV / SUBHEADER ============ */
 function renderNav(){
   document.querySelectorAll('.nav-btn').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.view === state.view || (state.view==='detail' && btn.dataset.view==='projects'));
+    btn.classList.toggle('active', btn.dataset.view === state.view || (state.view==='detail' && btn.dataset.view==='machines'));
   });
 }
 function renderSubheader(){
   const sub = document.getElementById('subheader');
   if(state.view === 'detail'){
-    const p = DB.projects.find(x=>x.id===state.currentProjectId);
+    const m = DB.machines.find(x=>x.id===state.currentMachineId);
     sub.innerHTML = `
       <div class="back-row">
         <button class="back-btn" id="backBtn">← Back</button>
-        <button class="edit-btn" id="editProjectBtn">Edit Project</button>
+        <button class="edit-btn" id="editMachineBtn">Edit Machine</button>
       </div>`;
-    sub.querySelector('#backBtn').onclick = ()=>{ state.view='projects'; state.currentProjectId=null; render(); };
-    sub.querySelector('#editProjectBtn').onclick = ()=>{ startEditProject(p.id); };
+    sub.querySelector('#backBtn').onclick = ()=>{ state.view='machines'; state.currentMachineId=null; render(); };
+    sub.querySelector('#editMachineBtn').onclick = ()=>{ startEditMachine(m.id); };
   } else {
     sub.innerHTML = '';
   }
@@ -392,56 +454,57 @@ function render(){
   renderNav();
   renderSubheader();
   const main = document.getElementById('main');
-  if(state.view === 'projects') return renderProjectsList(main);
+  if(state.view === 'machines') return renderMachinesList(main);
   if(state.view === 'completed') return renderCompletedList(main);
   if(state.view === 'equipment') return renderEquipment(main);
-  if(state.view === 'add') return renderAddProject(main);
-  if(state.view === 'detail') return renderProjectDetail(main);
+  if(state.view === 'add') return renderAddMachine(main);
+  if(state.view === 'detail') return renderMachineDetail(main);
 }
 
-/* ============ PROJECTS LIST / COMPLETED ============ */
-function renderProjectsList(main){
-  const active = DB.projects.filter(p=>p.status !== 'Complete');
-  let html = `<h1 class="page-title">Active Projects</h1>`;
+/* ============ MACHINES LIST / COMPLETED ============ */
+function renderMachinesList(main){
+  const active = DB.machines.filter(m=>m.status !== 'Complete');
+  let html = `<h1 class="page-title">Active Machines</h1>`;
   if(active.length===0){
-    html += `<div class="empty">No active projects yet.<br>Tap "Add Project" below to start one.</div>`;
+    html += `<div class="empty">No active machines yet.<br>Tap "Add Machine" below to start one.</div>`;
   } else {
-    active.forEach(p=>{
-      const {done,total} = projectProgress(p);
+    active.forEach(m=>{
+      const {done,total} = machineProgress(m);
       const pct = total ? Math.round((done/total)*100) : 0;
+      const partCount = m.parts.length;
       html += `
-        <div class="card" data-id="${p.id}">
+        <div class="card" data-id="${m.id}">
           <div class="card-top">
-            <h3>${escapeHtml(p.name)}</h3>
-            <span class="badge ${p.status}">${p.status}</span>
+            <h3>${escapeHtml(m.name)}</h3>
+            <span class="badge ${m.status}">${m.status}</span>
           </div>
-          <div class="dates">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
+          <div class="dates">${fmtDate(m.startDate)} — ${fmtDate(m.endDate)}</div>
           <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-          <div class="steps-count">${done} / ${total} Steps Completed · ${p.machines.length} machine${p.machines.length===1?'':'s'}</div>
+          <div class="steps-count">${done} / ${total} Steps Completed · ${partCount} part${partCount===1?'':'s'}</div>
         </div>`;
     });
   }
   main.innerHTML = html;
   main.querySelectorAll('.card').forEach(c=>{
-    c.onclick = ()=>{ state.view='detail'; state.currentProjectId=c.dataset.id; render(); };
+    c.onclick = ()=>{ state.view='detail'; state.currentMachineId=c.dataset.id; render(); };
   });
 }
 
 function renderCompletedList(main){
-  const done = DB.projects.filter(p=>p.status === 'Complete');
-  let html = `<h1 class="page-title">Completed Projects</h1>`;
+  const done = DB.machines.filter(m=>m.status === 'Complete');
+  let html = `<h1 class="page-title">Completed Machines</h1>`;
   if(done.length===0){
-    html += `<div class="empty">No completed projects yet.</div>`;
+    html += `<div class="empty">No completed machines yet.</div>`;
   } else {
-    done.forEach(p=>{
-      const pr = projectProgress(p);
+    done.forEach(m=>{
+      const pr = machineProgress(m);
       html += `
-        <div class="card" data-id="${p.id}">
+        <div class="card" data-id="${m.id}">
           <div class="card-top">
-            <h3>${escapeHtml(p.name)}</h3>
+            <h3>${escapeHtml(m.name)}</h3>
             <span class="badge Complete">COMPLETE</span>
           </div>
-          <div class="dates">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
+          <div class="dates">${fmtDate(m.startDate)} — ${fmtDate(m.endDate)}</div>
           <div class="progress-track"><div class="progress-fill done" style="width:100%"></div></div>
           <div class="steps-count">${pr.total} / ${pr.total} Steps Completed</div>
         </div>`;
@@ -449,7 +512,7 @@ function renderCompletedList(main){
   }
   main.innerHTML = html;
   main.querySelectorAll('.card').forEach(c=>{
-    c.onclick = ()=>{ state.view='detail'; state.currentProjectId=c.dataset.id; render(); };
+    c.onclick = ()=>{ state.view='detail'; state.currentMachineId=c.dataset.id; render(); };
   });
 }
 
@@ -464,7 +527,7 @@ function renderEquipment(main){
     </div>`;
 
   if(DB.equipment.length === 0){
-    html += `<div class="empty">No equipment yet.<br>Add some above to link it to project steps.</div>`;
+    html += `<div class="empty">No equipment yet.<br>Add some above to link it to build steps.</div>`;
   } else {
     DB.equipment.forEach(eq=>{
       const status = computeEquipmentStatus(eq);
@@ -477,7 +540,7 @@ function renderEquipment(main){
           <div class="machine-status">
             ${eq.maintenance
               ? escapeHtml(eq.maintenanceNote || 'No maintenance notes added.')
-              : 'Status is tracked automatically from linked project steps.'}
+              : 'Status is tracked automatically from linked build steps.'}
           </div>
           <div class="machine-actions">
             ${eq.maintenance
@@ -556,308 +619,288 @@ function renderEquipment(main){
   });
 }
 
-/* ============ ADD / EDIT PROJECT (shell only — machines/parts/steps live in detail view) ============ */
+/* ============ ADD / EDIT MACHINE (shell only — parts/steps live in detail view) ============ */
 function newDraft(){
-  return { id:null, name:'', startDate:'', endDate:'', status:'Active', machines:[] };
+  return { id:null, name:'', startDate:'', endDate:'', status:'Active', parts:[] };
 }
 
-function startEditProject(projectId){
-  const p = DB.projects.find(x=>x.id===projectId);
-  state.editingProject = JSON.parse(JSON.stringify(p));
+function startEditMachine(machineId){
+  const m = DB.machines.find(x=>x.id===machineId);
+  state.editingMachine = JSON.parse(JSON.stringify(m));
   state.view = 'add';
   render();
 }
 
-function renderAddProject(main){
-  if(!state.editingProject) state.editingProject = newDraft();
-  const d = state.editingProject;
+function renderAddMachine(main){
+  if(!state.editingMachine) state.editingMachine = newDraft();
+  const d = state.editingMachine;
   const isEdit = !!d.id;
 
   main.innerHTML = `
     <div class="form-card">
-      <h2>${isEdit ? 'Edit Project' : 'New Project'}</h2>
-      <input type="text" id="pName" placeholder="Project Name" value="${escapeHtml(d.name)}">
+      <h2>${isEdit ? 'Edit Machine' : 'New Machine'}</h2>
+      <input type="text" id="mName" placeholder="Machine Name" value="${escapeHtml(d.name)}">
       <div class="row2">
-        <div><label>Start Date</label><input type="date" id="pStart" value="${d.startDate||''}"></div>
-        <div><label>End Date</label><input type="date" id="pEnd" value="${d.endDate||''}"></div>
+        <div><label>Start Date</label><input type="date" id="mStart" value="${d.startDate||''}"></div>
+        <div><label>End Date</label><input type="date" id="mEnd" value="${d.endDate||''}"></div>
       </div>
-      ${!isEdit ? `<div class="hint">You'll add machines and parts on the next screen.</div>` : ''}
+      ${!isEdit ? `<div class="hint">You'll add parts (and sub-parts) on the next screen.</div>` : ''}
     </div>
 
-    <button class="btn green" id="commitBtn">${isEdit ? 'SAVE PROJECT' : 'CREATE PROJECT'}</button>
+    <button class="btn green" id="commitBtn">${isEdit ? 'SAVE MACHINE' : 'CREATE MACHINE'}</button>
     ${isEdit ? `<button class="btn grey" id="cancelEditBtn" style="margin-top:10px;">Cancel</button>
-    <button class="btn" id="deleteProjectBtn" style="margin-top:10px;background:#b3212f;">Delete Project</button>` : ''}
+    <button class="btn" id="deleteMachineBtn" style="margin-top:10px;background:#b3212f;">Delete Machine</button>` : ''}
   `;
 
-  document.getElementById('pName').oninput = e => d.name = e.target.value;
-  document.getElementById('pStart').oninput = e => d.startDate = e.target.value;
-  document.getElementById('pEnd').oninput = e => d.endDate = e.target.value;
+  document.getElementById('mName').oninput = e => d.name = e.target.value;
+  document.getElementById('mStart').oninput = e => d.startDate = e.target.value;
+  document.getElementById('mEnd').oninput = e => d.endDate = e.target.value;
 
   document.getElementById('commitBtn').onclick = async ()=>{
-    if(!d.name.trim()){ showToast('Project name is required'); return; }
+    if(!d.name.trim()){ showToast('Machine name is required'); return; }
     if(!d.startDate || !d.endDate){ showToast('Start and end dates are required'); return; }
 
     recomputeAll(d);
 
     if(isEdit){
-      const idx = DB.projects.findIndex(x=>x.id===d.id);
-      DB.projects[idx] = d;
+      const idx = DB.machines.findIndex(x=>x.id===d.id);
+      DB.machines[idx] = d;
     } else {
       d.id = uid();
-      DB.projects.push(d);
+      DB.machines.push(d);
     }
     await saveData(DB);
-    showToast(isEdit ? 'Project saved' : 'Project created');
-    state.editingProject = null;
+    showToast(isEdit ? 'Machine saved' : 'Machine created');
+    state.editingMachine = null;
     state.view = 'detail';
-    state.currentProjectId = d.id;
+    state.currentMachineId = d.id;
     render();
   };
 
   if(isEdit){
     document.getElementById('cancelEditBtn').onclick = ()=>{
-      state.editingProject = null;
+      state.editingMachine = null;
       state.view = 'detail';
       render();
     };
-    document.getElementById('deleteProjectBtn').onclick = async ()=>{
-      if(confirm('Delete this project permanently?')){
-        DB.projects = DB.projects.filter(x=>x.id!==d.id);
+    document.getElementById('deleteMachineBtn').onclick = async ()=>{
+      if(confirm('Delete this machine permanently?')){
+        DB.machines = DB.machines.filter(x=>x.id!==d.id);
         await saveData(DB);
-        state.editingProject = null;
-        state.view = 'projects';
+        state.editingMachine = null;
+        state.view = 'machines';
         render();
       }
     };
   }
 }
 
-/* ============ PROJECT DETAIL (the tree) ============ */
-function renderProjectDetail(main){
-  const p = DB.projects.find(x=>x.id===state.currentProjectId);
-  if(!p){ state.view='projects'; return render(); }
+/* ============ MACHINE DETAIL (the recursive part tree) ============ */
+function renderStepHtml(part, machineId, s){
+  const cls = s.status==='Complete' ? 'complete' : (s.status==='Active' ? 'active-step' : 'none-step');
+  let html = `<div class="detail-step ${cls}">
+    <div class="detail-step-top">
+      <h4>${escapeHtml(s.name)}${s.equipment ? ' ('+escapeHtml(s.equipment)+')' : ''}</h4>
+      <span class="badge ${s.status}">${s.status}</span>
+    </div>`;
+  if(s.status === 'Complete'){
+    html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy||'—')} ${s.time? '| '+escapeHtml(s.time):''} ${s.description? '| '+escapeHtml(s.description):''}</div>
+      <div style="margin-top:8px;"><button class="btn small edit-step-status" data-mid="${machineId}" data-pid="${part.id}" data-id="${s.id}">Reopen step</button></div>`;
+  } else if(state.activeStepInputId === s.id){
+    html += `
+      <div class="inline-form">
+        <input type="text" id="doneBy_${s.id}" placeholder="Done by?" value="${escapeHtml(s.doneBy||'')}">
+        <select id="statusSel_${s.id}">
+          <option value="None" ${s.status==='None'?'selected':''}>None</option>
+          <option value="Active" ${s.status==='Active'?'selected':''}>Active</option>
+          <option value="Complete">Complete</option>
+        </select>
+        <textarea id="desc_${s.id}" placeholder="Description">${escapeHtml(s.description||'')}</textarea>
+        <button class="btn green mark-done" data-mid="${machineId}" data-pid="${part.id}" data-id="${s.id}">Done</button>
+      </div>`;
+  } else {
+    html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy) || 'None'}</div>
+      <div style="margin-top:8px;display:flex;gap:6px;">
+        <button class="btn small open-step" data-id="${s.id}">Fill in</button>
+        <button class="remove-x remove-step" data-mid="${machineId}" data-pid="${part.id}" data-id="${s.id}">Del</button>
+      </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+// Renders one part card, plus (recursively) all of its sub-parts nested inside it.
+function renderPartNode(part, machineId, depth, equipOptions){
+  const collapsed = !!state.collapsedParts[part.id];
+  const pr = partProgress(part);
+  const pct = pr.total ? Math.round(pr.done/pr.total*100) : 0;
+  const indent = Math.min(depth, 4) * 12;
+  const subCount = part.parts.length;
+
+  let html = `<div class="part-card" style="margin-left:${indent}px">
+    <div class="part-head toggle-part" data-id="${part.id}">
+      <span class="collapse-ic">${collapsed?'▶':'▼'}</span>
+      <h4>${escapeHtml(part.name)}</h4>
+      <span class="badge ${part.status}">${part.status}</span>
+    </div>
+    <div class="mini-progress-track"><div class="mini-progress-fill ${part.status==='Complete'?'done':''}" style="width:${pct}%"></div></div>
+    <div class="part-meta">${pr.done} / ${pr.total} steps${subCount ? ' · '+subCount+' sub-part'+(subCount===1?'':'s') : ''}
+      <button class="remove-x remove-part" data-mid="${machineId}" data-id="${part.id}">Remove</button>
+    </div>`;
+
+  if(!collapsed){
+    html += `<div class="part-body">`;
+
+    if(part.steps.length===0 && part.parts.length===0){
+      html += `<div class="empty small">No steps or sub-parts yet.</div>`;
+    }
+
+    part.steps.forEach(s=>{ html += renderStepHtml(part, machineId, s); });
+
+    html += `<div class="tree-add-form">
+      <div class="tree-label">Add Step</div>
+      <input type="number" id="stepNo_${part.id}" placeholder="Step No." min="1">
+      <input type="text" id="stepName_${part.id}" placeholder="Step Name/Function">
+      <select id="stepEquip_${part.id}">
+        <option value="">Select Equipment</option>
+        ${equipOptions}
+      </select>
+      <button class="btn small add-step-btn" data-mid="${machineId}" data-pid="${part.id}">ADD STEP</button>
+    </div>`;
+
+    part.parts.forEach(child=>{ html += renderPartNode(child, machineId, depth+1, equipOptions); });
+
+    html += `<div class="tree-add-form">
+      <div class="tree-label">Add Sub-Part</div>
+      <input type="text" id="newSubPartName_${part.id}" placeholder="Sub-Part Name (e.g. Piston Assembly)">
+      <button class="btn small add-subpart-btn" data-mid="${machineId}" data-pid="${part.id}">ADD SUB-PART</button>
+    </div>`;
+
+    html += `</div>`; // part-body
+  }
+  html += `</div>`; // part-card
+  return html;
+}
+
+function renderMachineDetail(main){
+  const m = DB.machines.find(x=>x.id===state.currentMachineId);
+  if(!m){ state.view='machines'; return render(); }
 
   let html = `
-    <h1 class="page-title" style="margin-bottom:2px;">${escapeHtml(p.name)}</h1>
-    <div class="dates" style="margin-bottom:6px;">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
-    <div style="margin-bottom:14px;"><span class="badge ${p.status}">${p.status}</span></div>
-
-    <div class="form-card">
-      <h2>Add Machine</h2>
-      <input type="text" id="newMachineName" placeholder="Machine Name (e.g. Model X Assembly)">
-      <button class="btn" id="addMachineBtn">ADD MACHINE</button>
-    </div>
+    <h1 class="page-title" style="margin-bottom:2px;">${escapeHtml(m.name)}</h1>
+    <div class="dates" style="margin-bottom:6px;">${fmtDate(m.startDate)} — ${fmtDate(m.endDate)}</div>
+    <div style="margin-bottom:14px;"><span class="badge ${m.status}">${m.status}</span></div>
   `;
 
-  if(p.machines.length===0){
-    html += `<div class="empty">No machines added yet.<br>Add one above to start building this project.</div>`;
+  const equipOptions = DB.equipment.map(e=>`<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
+  const cloneOptions = collectCloneOptions(m.parts, '')
+    .map(o=>`<option value="${o.id}">${escapeHtml(o.label)} (${o.count} steps)</option>`)
+    .join('');
+
+  html += `
+    <div class="form-card">
+      <h2>Add Part</h2>
+      <input type="text" id="newPartName" placeholder="Part Name (e.g. Base Frame)">
+      ${cloneOptions ? `
+        <select id="clonePart">
+          <option value="">Start with blank steps</option>
+          ${cloneOptions}
+        </select>
+        <div class="hint">Optional — copies all steps from another part as a starting point.</div>
+      ` : ''}
+      <button class="btn" id="addPartBtn">ADD PART</button>
+    </div>`;
+
+  if(m.parts.length===0){
+    html += `<div class="empty">No parts added yet.<br>Add one above to start building this machine.</div>`;
   } else {
-    // every part across the project, for the "clone steps from" dropdown
-    const allParts = [];
-    p.machines.forEach(m=>m.parts.forEach(part=>allParts.push({machineName:m.name, part})));
-    const cloneOptions = allParts.filter(x=>x.part.steps.length>0)
-      .map(x=>`<option value="${x.part.id}">${escapeHtml(x.machineName)} / ${escapeHtml(x.part.name)} (${x.part.steps.length} steps)</option>`)
-      .join('');
-
-    p.machines.forEach(machine=>{
-      const collapsed = !!state.collapsedMachines[machine.id];
-      const mp = machineProgress(machine);
-      html += `<div class="machine-card">
-        <div class="machine-head toggle-machine" data-id="${machine.id}">
-          <span class="collapse-ic">${collapsed?'▶':'▼'}</span>
-          <h3>${escapeHtml(machine.name)}</h3>
-          <span class="badge ${machine.status}">${machine.status}</span>
-        </div>
-        <div class="machine-progress">
-          ${mp.done} / ${mp.total} steps · ${machine.parts.length} part${machine.parts.length===1?'':'s'}
-          <button class="remove-x remove-machine" data-id="${machine.id}">Remove</button>
-        </div>`;
-
-      if(!collapsed){
-        html += `<div class="machine-body">`;
-
-        machine.parts.forEach(part=>{
-          const partCollapsed = !!state.collapsedParts[part.id];
-          const pr = partProgress(part);
-          const pct = pr.total ? Math.round(pr.done/pr.total*100) : 0;
-          html += `<div class="part-card">
-            <div class="part-head toggle-part" data-id="${part.id}">
-              <span class="collapse-ic">${partCollapsed?'▶':'▼'}</span>
-              <h4>${escapeHtml(part.name)}</h4>
-              <span class="badge ${part.status}">${part.status}</span>
-            </div>
-            <div class="mini-progress-track"><div class="mini-progress-fill ${part.status==='Complete'?'done':''}" style="width:${pct}%"></div></div>
-            <div class="part-meta">${pr.done} / ${pr.total} steps <button class="remove-x remove-part" data-mid="${machine.id}" data-id="${part.id}">Remove</button></div>`;
-
-          if(!partCollapsed){
-            html += `<div class="part-body">`;
-
-            if(part.steps.length===0){
-              html += `<div class="empty small">No steps yet.</div>`;
-            }
-            part.steps.forEach(s=>{
-              const cls = s.status==='Complete' ? 'complete' : (s.status==='Active' ? 'active-step' : 'none-step');
-              html += `<div class="detail-step ${cls}">
-                <div class="detail-step-top">
-                  <h4>${escapeHtml(s.name)}${s.equipment ? ' ('+escapeHtml(s.equipment)+')' : ''}</h4>
-                  <span class="badge ${s.status}">${s.status}</span>
-                </div>`;
-              if(s.status === 'Complete'){
-                html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy||'—')} ${s.time? '| '+escapeHtml(s.time):''} ${s.description? '| '+escapeHtml(s.description):''}</div>
-                  <div style="margin-top:8px;"><button class="btn small edit-step-status" data-mid="${machine.id}" data-pid="${part.id}" data-id="${s.id}">Reopen step</button></div>`;
-              } else if(state.activeStepInputId === s.id){
-                html += `
-                  <div class="inline-form">
-                    <input type="text" id="doneBy_${s.id}" placeholder="Done by?" value="${escapeHtml(s.doneBy||'')}">
-                    <select id="statusSel_${s.id}">
-                      <option value="None" ${s.status==='None'?'selected':''}>None</option>
-                      <option value="Active" ${s.status==='Active'?'selected':''}>Active</option>
-                      <option value="Complete">Complete</option>
-                    </select>
-                    <textarea id="desc_${s.id}" placeholder="Description">${escapeHtml(s.description||'')}</textarea>
-                    <button class="btn green mark-done" data-mid="${machine.id}" data-pid="${part.id}" data-id="${s.id}">Done</button>
-                  </div>`;
-              } else {
-                html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy) || 'None'}</div>
-                  <div style="margin-top:8px;display:flex;gap:6px;">
-                    <button class="btn small open-step" data-id="${s.id}">Fill in</button>
-                    <button class="remove-x remove-step" data-mid="${machine.id}" data-pid="${part.id}" data-id="${s.id}">Del</button>
-                  </div>`;
-              }
-              html += `</div>`;
-            });
-
-            const equipOptions = DB.equipment.map(e=>`<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
-            html += `<div class="tree-add-form">
-              <div class="tree-label">Add Step</div>
-              <input type="number" id="stepNo_${part.id}" placeholder="Step No." min="1">
-              <input type="text" id="stepName_${part.id}" placeholder="Step Name/Function">
-              <select id="stepEquip_${part.id}">
-                <option value="">Select Equipment</option>
-                ${equipOptions}
-              </select>
-              <button class="btn small add-step-btn" data-mid="${machine.id}" data-pid="${part.id}">ADD STEP</button>
-            </div>`;
-
-            html += `</div>`; // part-body
-          }
-          html += `</div>`; // part-card
-        });
-
-        html += `<div class="tree-add-form">
-          <div class="tree-label">Add Part</div>
-          <input type="text" id="newPartName_${machine.id}" placeholder="Part Name (e.g. Base Frame)">
-          ${cloneOptions ? `
-            <select id="clonePart_${machine.id}">
-              <option value="">Start with blank steps</option>
-              ${cloneOptions}
-            </select>
-            <div class="hint">Optional — copies all steps from another part as a starting point, so similar parts are fast to add.</div>
-          ` : ''}
-          <button class="btn small add-part-btn" data-mid="${machine.id}">ADD PART</button>
-        </div>`;
-
-        html += `</div>`; // machine-body
-      }
-      html += `</div>`; // machine-card
-    });
+    m.parts.forEach(part=>{ html += renderPartNode(part, m.id, 0, equipOptions); });
   }
 
   main.innerHTML = html;
 
-  /* ---- wire events ---- */
-  document.getElementById('addMachineBtn').onclick = async ()=>{
-    const input = document.getElementById('newMachineName');
+  /* ---- add top-level part ---- */
+  document.getElementById('addPartBtn').onclick = async ()=>{
+    const input = document.getElementById('newPartName');
     const name = input.value.trim();
-    if(!name){ showToast('Machine name is required'); return; }
-    p.machines.push({ id: uid(), name, status:'Active', parts: [] });
-    recomputeAll(p);
+    if(!name){ showToast('Part name is required'); return; }
+
+    const cloneSel = document.getElementById('clonePart');
+    let steps = [];
+    if(cloneSel && cloneSel.value){
+      const source = findPart(m.parts, cloneSel.value);
+      if(source){
+        steps = source.steps.map(s=>({
+          id: uid(), stepNo: s.stepNo, name: s.name, equipment: s.equipment,
+          status: 'None', doneBy: '', time: '', description: ''
+        }));
+      }
+    }
+    const p = newPart(name);
+    p.steps = steps;
+    m.parts.push(p);
+    recomputeAll(m);
     await saveData(DB);
-    showToast('Machine added');
+    showToast(steps.length ? `Part added with ${steps.length} cloned steps` : 'Part added');
     render();
   };
 
-  main.querySelectorAll('.toggle-machine').forEach(el=>{
-    el.onclick = ()=>{ const id=el.dataset.id; state.collapsedMachines[id] = !state.collapsedMachines[id]; render(); };
-  });
+  /* ---- collapse toggle (works at any depth) ---- */
   main.querySelectorAll('.toggle-part').forEach(el=>{
     el.onclick = ()=>{ const id=el.dataset.id; state.collapsedParts[id] = !state.collapsedParts[id]; render(); };
   });
 
-  main.querySelectorAll('.remove-machine').forEach(btn=>{
-    btn.onclick = async ()=>{
-      if(confirm('Remove this machine and all its parts/steps?')){
-        p.machines = p.machines.filter(m=>m.id!==btn.dataset.id);
-        recomputeAll(p);
-        await saveData(DB);
-        render();
-      }
-    };
-  });
+  /* ---- remove part / sub-part at any depth ---- */
   main.querySelectorAll('.remove-part').forEach(btn=>{
     btn.onclick = async ()=>{
-      if(confirm('Remove this part and its steps?')){
-        const m = p.machines.find(x=>x.id===btn.dataset.mid);
-        m.parts = m.parts.filter(pt=>pt.id!==btn.dataset.id);
-        recomputeAll(p);
+      if(confirm('Remove this part and everything nested inside it (sub-parts and steps)?')){
+        removePart(m.parts, btn.dataset.id);
+        recomputeAll(m);
         await saveData(DB);
         render();
       }
     };
   });
-  main.querySelectorAll('.remove-step').forEach(btn=>{
+
+  /* ---- add sub-part under any part ---- */
+  main.querySelectorAll('.add-subpart-btn').forEach(btn=>{
     btn.onclick = async ()=>{
-      const m = p.machines.find(x=>x.id===btn.dataset.mid);
-      const part = m.parts.find(x=>x.id===btn.dataset.pid);
-      part.steps = part.steps.filter(s=>s.id!==btn.dataset.id);
-      recomputeAll(p);
+      const parent = findPart(m.parts, btn.dataset.pid);
+      const input = document.getElementById('newSubPartName_'+btn.dataset.pid);
+      const name = input.value.trim();
+      if(!name){ showToast('Sub-part name is required'); return; }
+      parent.parts.push(newPart(name));
+      recomputeAll(m);
       await saveData(DB);
+      showToast('Sub-part added');
       render();
     };
   });
 
-  main.querySelectorAll('.add-part-btn').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const mid = btn.dataset.mid;
-      const m = p.machines.find(x=>x.id===mid);
-      const name = document.getElementById('newPartName_'+mid).value.trim();
-      if(!name){ showToast('Part name is required'); return; }
-
-      const cloneSel = document.getElementById('clonePart_'+mid);
-      let steps = [];
-      if(cloneSel && cloneSel.value){
-        let source = null;
-        p.machines.forEach(mm=>{ const f = mm.parts.find(pp=>pp.id===cloneSel.value); if(f) source = f; });
-        if(source){
-          steps = source.steps.map(s=>({
-            id: uid(), stepNo: s.stepNo, name: s.name, equipment: s.equipment,
-            status: 'None', doneBy: '', time: '', description: ''
-          }));
-        }
-      }
-      m.parts.push({ id: uid(), name, status:'Active', steps });
-      recomputeAll(p);
-      await saveData(DB);
-      showToast(steps.length ? `Part added with ${steps.length} cloned steps` : 'Part added');
-      render();
-    };
-  });
-
+  /* ---- steps: add / remove / fill in / mark done ---- */
   main.querySelectorAll('.add-step-btn').forEach(btn=>{
     btn.onclick = async ()=>{
-      const mid = btn.dataset.mid, pid = btn.dataset.pid;
-      const m = p.machines.find(x=>x.id===mid);
-      const part = m.parts.find(x=>x.id===pid);
-      const no = document.getElementById('stepNo_'+pid).value;
-      const name = document.getElementById('stepName_'+pid).value.trim();
-      const equipment = document.getElementById('stepEquip_'+pid).value;
+      const part = findPart(m.parts, btn.dataset.pid);
+      const no = document.getElementById('stepNo_'+part.id).value;
+      const name = document.getElementById('stepName_'+part.id).value.trim();
+      const equipment = document.getElementById('stepEquip_'+part.id).value;
       if(!name){ showToast('Step name is required'); return; }
       part.steps.push({
         id: uid(), stepNo: no ? parseInt(no,10) : part.steps.length+1,
         name, equipment, status:'None', doneBy:'', time:'', description:''
       });
       part.steps.sort((a,b)=>(a.stepNo||0)-(b.stepNo||0));
-      recomputeAll(p);
+      recomputeAll(m);
+      await saveData(DB);
+      render();
+    };
+  });
+
+  main.querySelectorAll('.remove-step').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const part = findPart(m.parts, btn.dataset.pid);
+      part.steps = part.steps.filter(s=>s.id!==btn.dataset.id);
+      recomputeAll(m);
       await saveData(DB);
       render();
     };
@@ -869,11 +912,10 @@ function renderProjectDetail(main){
 
   main.querySelectorAll('.edit-step-status').forEach(btn=>{
     btn.onclick = async ()=>{
-      const m = p.machines.find(x=>x.id===btn.dataset.mid);
-      const part = m.parts.find(x=>x.id===btn.dataset.pid);
+      const part = findPart(m.parts, btn.dataset.pid);
       const s = part.steps.find(x=>x.id===btn.dataset.id);
       s.status = 'Active';
-      recomputeAll(p);
+      recomputeAll(m);
       await saveData(DB);
       state.activeStepInputId = s.id;
       render();
@@ -882,8 +924,7 @@ function renderProjectDetail(main){
 
   main.querySelectorAll('.mark-done').forEach(btn=>{
     btn.onclick = async ()=>{
-      const m = p.machines.find(x=>x.id===btn.dataset.mid);
-      const part = m.parts.find(x=>x.id===btn.dataset.pid);
+      const part = findPart(m.parts, btn.dataset.pid);
       const s = part.steps.find(x=>x.id===btn.dataset.id);
       s.doneBy = document.getElementById('doneBy_'+s.id).value.trim();
       s.status = document.getElementById('statusSel_'+s.id).value;
@@ -894,10 +935,10 @@ function renderProjectDetail(main){
       }
       state.activeStepInputId = null;
 
-      const wasComplete = p.status === 'Complete';
-      recomputeAll(p);
-      if(p.status === 'Complete' && !wasComplete){
-        showToast('All steps complete — project moved to Completed!');
+      const wasComplete = m.status === 'Complete';
+      recomputeAll(m);
+      if(m.status === 'Complete' && !wasComplete){
+        showToast('All steps complete — machine moved to Completed!');
       }
       await saveData(DB);
       render();
@@ -911,7 +952,7 @@ async function bootApp(){
   phone.innerHTML = `<div class="login-loading">Loading your data…</div>`;
   try{
     await loadData();
-    DB.projects.forEach(recomputeAll);
+    DB.machines.forEach(recomputeAll);
     renderAppShell();
     render();
   }catch(e){
