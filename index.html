@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>APE — Machine Build Tracker</title>
+<title>APE — Project Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <style>
@@ -21,7 +21,10 @@
     --purple:#6b4fa0;
   }
   *{box-sizing:border-box;}
-  html, body{margin:0;height:100%;}
+  html, body{
+    margin:0;
+    height:100%;
+  }
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--cream);
@@ -44,85 +47,153 @@
     justify-content:space-between;
     border-bottom:1px solid var(--border);
   }
-  header .logo{font-weight:800;font-size:22px;color:var(--red);letter-spacing:1px;}
+  header .logo{
+    font-weight:800;
+    font-size:22px;
+    color:var(--red);
+    letter-spacing:1px;
+  }
   header .icons{display:flex;gap:14px;font-size:14px;align-items:center;}
-  header .logout-link{color:var(--red);font-size:12px;font-weight:700;cursor:pointer;background:none;border:none;text-decoration:underline;}
-  .back-row{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0;}
-  .back-btn, .edit-btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;}
-  main{flex:1;overflow-y:auto;padding:16px 18px 90px;}
-  h1.page-title{font-size:22px;margin:6px 0 16px;color:#1a1a1a;}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 6px rgba(161,29,44,0.05);}
-  .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:10px;}
+  header .logout-link{
+    color:var(--red);font-size:12px;font-weight:700;cursor:pointer;
+    background:none;border:none;text-decoration:underline;
+  }
+  .back-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px 0;
+  }
+  .back-btn{
+    background:var(--red);color:#fff;border:none;border-radius:8px;
+    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .edit-btn{
+    background:var(--red);color:#fff;border:none;border-radius:8px;
+    padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;
+  }
+  main{
+    flex:1;
+    overflow-y:auto;
+    padding:16px 18px 90px;
+  }
+  h1.page-title{
+    font-size:22px;margin:6px 0 16px;color:#1a1a1a;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow:0 2px 6px rgba(161,29,44,0.05);
+  }
+  .card-top{
+    display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;
+    gap:10px;
+  }
   .card-top h3{margin:0;font-size:16px;color:#1a1a1a;}
-  .badge{font-size:11px;font-weight:700;color:#fff;padding:5px 10px;border-radius:12px;white-space:nowrap;text-transform:uppercase;letter-spacing:.3px;}
+  .badge{
+    font-size:11px;font-weight:700;color:#fff;padding:5px 10px;border-radius:12px;
+    white-space:nowrap;text-transform:uppercase;letter-spacing:.3px;
+  }
   .badge.Running{background:var(--red);}
   .badge.Stopped{background:var(--orange);}
   .badge.Active{background:#3b3b46;}
+  .badge.Finished{background:var(--green);}
   .badge.Complete{background:var(--green);}
   .badge.None{background:#9a9a9a;}
   .badge.Idle{background:#9a9a9a;}
   .badge.Maintenance{background:var(--purple);}
   .dates{font-size:12px;color:var(--muted);margin-bottom:10px;}
-  .progress-track{height:8px;background:#f3dede;border-radius:6px;overflow:hidden;margin-bottom:8px;}
+  .progress-track{
+    height:8px;background:#f3dede;border-radius:6px;overflow:hidden;margin-bottom:8px;
+  }
   .progress-fill{height:100%;background:var(--red);}
   .progress-fill.done{background:var(--green);}
   .steps-count{font-size:12px;color:#333;}
-  .empty{text-align:center;color:var(--muted);font-size:14px;padding:40px 10px;}
-  .empty.small{padding:12px;font-size:12.5px;}
-  footer{display:flex;border-top:2px solid var(--red);background:#fff;}
-  .nav-btn{flex:1;background:none;border:none;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--red);font-size:11px;cursor:pointer;font-weight:600;}
+  .empty{
+    text-align:center;color:var(--muted);font-size:14px;padding:40px 10px;
+  }
+  footer{
+    display:flex;
+    border-top:2px solid var(--red);
+    background:#fff;
+  }
+  .nav-btn{
+    flex:1;background:none;border:none;padding:10px 4px 12px;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    color:var(--red);font-size:11px;cursor:pointer;font-weight:600;
+  }
   .nav-btn .ic{font-size:18px;}
   .nav-btn.active{color:var(--red-dark);}
+  .nav-btn.active .ic{filter:none;}
+  .nav-btn.plus{color:var(--red);}
 
   .machine-status{font-size:12px;color:var(--muted);}
   .machine-actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
 
-  .form-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;}
+  .form-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:16px;margin-bottom:16px;
+  }
   .form-card h2{font-size:16px;color:var(--red);margin:0 0 10px;border-bottom:1px solid var(--border);padding-bottom:10px;}
-  input, select, textarea{width:100%;padding:10px 12px;border:1px solid #e2c9c9;border-radius:8px;font-size:14px;margin-bottom:10px;font-family:inherit;background:#fff;color:#222;}
+  input, select, textarea{
+    width:100%;padding:10px 12px;border:1px solid #e2c9c9;border-radius:8px;
+    font-size:14px;margin-bottom:10px;font-family:inherit;background:#fff;color:#222;
+  }
   textarea{resize:vertical;min-height:60px;}
   .row2{display:flex;gap:10px;}
   .row2 > div{flex:1;}
   .row2 label, .field label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
-  .btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;width:100%;}
+  .btn{
+    background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;
+    font-weight:700;font-size:14px;cursor:pointer;width:100%;
+  }
   .btn.green{background:var(--green);}
   .btn.purple{background:var(--purple);}
   .btn.small{width:auto;padding:6px 12px;font-size:12px;font-weight:600;}
   .btn.grey{background:#8a8a8a;}
+  .step-row{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--cream);border-radius:8px;padding:10px 12px;margin-bottom:8px;
+    font-size:13px;
+  }
+  .step-row .actions{display:flex;gap:6px;}
+  .step-row button{
+    border:1px solid #ccc;background:#fff;border-radius:6px;padding:5px 8px;font-size:12px;cursor:pointer;
+  }
+  .step-row button.del{color:var(--red);border-color:var(--red);}
 
-  .detail-step{background:var(--panel);border-left:5px solid var(--muted);border-radius:10px;padding:10px 12px;margin-bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,0.04);}
+  .detail-step{
+    background:var(--panel);border-left:5px solid var(--muted);border-radius:10px;
+    padding:14px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,0.04);
+  }
   .detail-step.complete{border-left-color:var(--green);}
   .detail-step.active-step{border-left-color:var(--red);}
   .detail-step.none-step{border-left-color:#bbb;}
-  .detail-step-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px;}
-  .detail-step-top h4{margin:0;font-size:13.5px;}
-  .detail-meta{font-size:11.5px;color:var(--muted);}
+  .detail-step-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+  .detail-step-top h4{margin:0;font-size:15px;}
+  .detail-meta{font-size:12px;color:var(--muted);}
   .inline-form{margin-top:10px;}
 
-  .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:50;}
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .25s;z-index:50;
+  }
   .toast.show{opacity:1;}
   select{-webkit-appearance:none;appearance:none;}
   .hint{font-size:11px;color:var(--muted);margin:-4px 0 10px;}
+  .empty.small{padding:16px;}
 
-  .login-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;padding:30px 26px;}
+  /* Login screen */
+  .login-wrap{
+    flex:1;display:flex;flex-direction:column;justify-content:center;
+    padding:30px 26px;
+  }
   .login-wrap h1{color:var(--red);font-size:24px;margin:0 0 4px;}
   .login-wrap p.sub{color:var(--muted);font-size:13px;margin:0 0 22px;}
   .login-error{color:var(--red);font-size:13px;margin:-4px 0 10px;min-height:16px;}
   .login-loading{text-align:center;color:var(--muted);padding:40px;}
-
-  /* Tree: machine > part (recursive, folder-in-folder) > steps */
-  .part-card{background:var(--cream);border:1px solid var(--border);border-radius:10px;margin:8px 0;overflow:hidden;}
-  .part-head{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer;}
-  .part-head h4{margin:0;flex:1;font-size:13.5px;color:#1a1a1a;}
-  .part-body{padding:0 11px 11px;}
-  .part-meta{font-size:11.5px;color:var(--muted);padding:0 11px 7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .collapse-ic{font-size:11px;color:var(--muted);width:12px;text-align:center;flex-shrink:0;}
-  .mini-progress-track{height:5px;background:#f3dede;border-radius:4px;overflow:hidden;margin:0 11px 5px;}
-  .mini-progress-fill{height:100%;background:var(--red);}
-  .mini-progress-fill.done{background:var(--green);}
-  .tree-add-form{padding:10px;border-top:1px dashed var(--border);margin-top:4px;}
-  .tree-label{font-weight:700;font-size:12.5px;color:var(--red);margin-bottom:6px;}
-  .remove-x{border:1px solid var(--red);background:#fff;color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;}
 </style>
 </head>
 <body>
@@ -143,7 +214,7 @@ function renderLogin(errorMsg){
   phone.innerHTML = `
     <div class="login-wrap">
       <h1>APE</h1>
-      <p class="sub">Sign in to access your machine build tracker.</p>
+      <p class="sub">Sign in to access your project tracker.</p>
       <div class="login-error">${errorMsg ? escapeHtml(errorMsg) : ''}</div>
       <input type="text" id="loginUser" placeholder="Email" autocomplete="username">
       <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
@@ -164,21 +235,23 @@ function renderLogin(errorMsg){
   });
 }
 
-/* ============ APP SHELL ============ */
+/* ============ APP SHELL (rendered after login) ============ */
 function renderAppShell(){
   const phone = document.getElementById('phone');
   phone.innerHTML = `
     <header>
       <div class="logo">APE</div>
-      <div class="icons"><button class="logout-link" id="logoutBtn">Log out</button></div>
+      <div class="icons">
+        <button class="logout-link" id="logoutBtn">Log out</button>
+      </div>
     </header>
     <div id="subheader"></div>
     <main id="main"></main>
     <footer>
-      <button class="nav-btn" data-view="machines"><span class="ic">🏭</span>Machines</button>
+      <button class="nav-btn" data-view="projects"><span class="ic">📁</span>Projects</button>
       <button class="nav-btn" data-view="completed"><span class="ic">✔️</span>Completed</button>
-      <button class="nav-btn" data-view="equipment"><span class="ic">🖥️</span>Equipment</button>
-      <button class="nav-btn" data-view="add"><span class="ic">➕</span>Add Machine</button>
+      <button class="nav-btn" data-view="machines"><span class="ic">🖥️</span>Machines</button>
+      <button class="nav-btn" data-view="add"><span class="ic">➕</span>Add Project</button>
     </footer>`;
 
   document.getElementById('logoutBtn').onclick = async ()=>{
@@ -189,8 +262,8 @@ function renderAppShell(){
   document.querySelectorAll('.nav-btn').forEach(btn=>{
     btn.onclick = ()=>{
       state.view = btn.dataset.view;
-      state.currentMachineId = null;
-      state.editingMachine = btn.dataset.view === 'add' ? null : state.editingMachine;
+      state.currentProjectId = null;
+      state.editingProject = btn.dataset.view === 'add' ? null : state.editingProject;
       render();
     };
   });
@@ -198,79 +271,7 @@ function renderAppShell(){
 
 /* ============ DATA LAYER (Supabase-backed) ============ */
 function defaultData(){
-  return { machines: [], equipment: [] };
-}
-
-// Recursively make sure every part node has the shape { id, name, status, steps[], parts[] }
-function ensurePartShape(op){
-  return {
-    id: op.id || uid(),
-    name: op.name,
-    status: op.status || 'Active',
-    steps: (op.steps || []).map(s=>({...s})),
-    parts: (op.parts || []).map(ensurePartShape)
-  };
-}
-// An old "machine" (the middle tier that used to sit inside a project) becomes a Part
-// that holds its old parts as children — same data, one renamed layer.
-function convertOldMachineToPart(om){
-  return {
-    id: om.id || uid(),
-    name: om.name,
-    status: om.status || 'Active',
-    steps: [],
-    parts: (om.parts || []).map(ensurePartShape)
-  };
-}
-// An old "project" becomes the new top-level Machine.
-function convertProjectToMachine(proj){
-  let oldMachines = proj.machines;
-  if(!oldMachines && proj.steps){
-    // very old flat shape: project.steps directly, step.machine = equipment name
-    oldMachines = [{
-      id: uid(), name: 'Part 1', status: proj.status,
-      parts: [{
-        id: uid(), name: 'Part 1', status: proj.status,
-        steps: proj.steps.map(s=>({
-          id: s.id, stepNo: s.stepNo, name: s.name,
-          equipment: s.machine || '', status: s.status,
-          doneBy: s.doneBy || '', time: s.time || '', description: s.description || ''
-        }))
-      }]
-    }];
-  }
-  return {
-    id: proj.id || uid(), name: proj.name, startDate: proj.startDate, endDate: proj.endDate,
-    status: proj.status || 'Active',
-    parts: (oldMachines || []).map(convertOldMachineToPart)
-  };
-}
-
-// Migrates data saved under older versions of this app into the current shape.
-function migrateData(raw){
-  const d = defaultData();
-
-  // ---- equipment (the physical tools list) ----
-  if(raw.equipment){
-    d.equipment = raw.equipment;
-  } else if(Array.isArray(raw.machines) && raw.machines.length && !('parts' in raw.machines[0]) && !('startDate' in raw.machines[0])){
-    // super old shape: "machines" key used to mean the equipment list
-    d.equipment = raw.machines;
-  }
-
-  // ---- machines (the top-level build, formerly "projects") ----
-  if(Array.isArray(raw.projects)){
-    d.machines = raw.projects.map(convertProjectToMachine);
-  } else if(Array.isArray(raw.machines) && raw.machines.length && ('parts' in raw.machines[0])){
-    // already current shape
-    d.machines = raw.machines.map(m=>({
-      id: m.id || uid(), name: m.name, startDate: m.startDate, endDate: m.endDate,
-      status: m.status || 'Active',
-      parts: (m.parts || []).map(ensurePartShape)
-    }));
-  }
-
-  return d;
+  return { projects: [], machines: [] };
 }
 
 let DB = defaultData();
@@ -287,7 +288,7 @@ async function loadData(){
     .maybeSingle();
 
   if(error) throw error;
-  DB = data && data.data ? migrateData(data.data) : defaultData();
+  DB = data && data.data ? Object.assign(defaultData(), data.data) : defaultData();
 }
 
 async function saveData(data){
@@ -306,12 +307,11 @@ async function saveData(data){
 
 /* ============ APP STATE ============ */
 let state = {
-  view: 'machines',
-  currentMachineId: null,
-  editingMachine: null,
+  view: 'projects',
+  currentProjectId: null,
+  editingProject: null,
   activeStepInputId: null,
-  maintenanceEditId: null,
-  collapsedParts: {}
+  maintenanceEditId: null
 };
 
 /* ============ HELPERS ============ */
@@ -328,123 +328,85 @@ function fmtDate(str){
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `${d} ${months[parseInt(m,10)-1]} ${y}`;
 }
+function projectProgress(p){
+  const children = DB.projects.filter(x=>x.parentId===p.id);
+  const totalSteps = p.steps.length;
+  const doneSteps = p.steps.filter(s=>s.status==='Complete').length;
+  const totalChildren = children.length;
+  const doneChildren = children.filter(c=>c.status==='Complete').length;
+  return { done: doneSteps+doneChildren, total: totalSteps+totalChildren };
+}
+function getChildren(p){
+  return DB.projects.filter(x=>x.parentId===p.id);
+}
 function escapeHtml(str){
   return (str||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
 
-/* ============ RECURSIVE PART-TREE HELPERS ============ */
-function newPart(name){
-  return { id: uid(), name, status: 'Active', steps: [], parts: [] };
+/* ============ PROJECT STATUS LOGIC ============ */
+function recomputeProjectStatus(p){
+  const children = getChildren(p);
+  children.forEach(recomputeProjectStatus); // post-order: children resolved before parent
+
+  const totalSteps = p.steps.length;
+  const doneSteps = p.steps.filter(s=>s.status==='Complete').length;
+  const anyStepActive = p.steps.some(s=>s.status==='Active');
+
+  const totalChildren = children.length;
+  const doneChildren = children.filter(c=>c.status==='Complete').length;
+  const anyChildActive = children.some(c=>c.status==='Running' || c.status==='Active');
+
+  const totalUnits = totalSteps + totalChildren;
+  const doneUnits = doneSteps + doneChildren;
+
+  if(totalUnits === 0){ p.status = 'Active'; return; }
+  if(doneUnits === totalUnits){ p.status = 'Complete'; return; }
+  if(anyStepActive || anyChildActive){ p.status = 'Running'; return; }
+  if(doneUnits > 0){ p.status = 'Stopped'; return; }
+  p.status = 'Active';
 }
-function findPart(parts, id){
-  for(const p of parts){
-    if(p.id === id) return p;
-    const found = findPart(p.parts, id);
-    if(found) return found;
-  }
-  return null;
-}
-function removePart(parts, id){
-  const idx = parts.findIndex(p=>p.id===id);
-  if(idx > -1){ parts.splice(idx,1); return true; }
-  for(const p of parts){ if(removePart(p.parts, id)) return true; }
-  return false;
-}
-function countAllParts(parts){
-  let n = 0;
-  parts.forEach(p=>{ n += 1; n += countAllParts(p.parts); });
-  return n;
-}
-// Flat list of every part in the tree that has its own steps, for the "clone steps from" dropdown.
-function collectCloneOptions(parts, prefix){
-  let opts = [];
-  parts.forEach(p=>{
-    const label = prefix ? prefix + ' / ' + p.name : p.name;
-    if(p.steps.length > 0) opts.push({ id: p.id, label, count: p.steps.length });
-    opts = opts.concat(collectCloneOptions(p.parts, label));
-  });
-  return opts;
-}
-function walkSteps(parts, cb){
-  parts.forEach(p=>{ p.steps.forEach(cb); walkSteps(p.parts, cb); });
+function recomputeAllStatuses(){
+  DB.projects.filter(p=>!p.parentId).forEach(recomputeProjectStatus);
 }
 
-/* ============ STATUS LOGIC (Active / Running / Stopped / Complete) ============ */
-function stepsOwnStatus(steps){
-  const total = steps.length;
-  if(total === 0) return null;
-  const doneCount = steps.filter(s=>s.status==='Complete').length;
-  if(doneCount === total) return 'Complete';
-  if(steps.some(s=>s.status==='Active')) return 'Running';
-  if(doneCount > 0) return 'Stopped';
-  return 'Active';
-}
-// Rolls a set of child statuses up to a parent status.
-function aggregateStatus(statuses){
-  if(statuses.length === 0) return 'Active';
-  if(statuses.every(s=>s==='Complete')) return 'Complete';
-  if(statuses.some(s=>s==='Running')) return 'Running';
-  if(statuses.some(s=>s!=='Active')) return 'Stopped';
-  return 'Active';
-}
-function recomputePart(part){
-  part.parts.forEach(recomputePart);
-  const own = stepsOwnStatus(part.steps);
-  const childStatuses = part.parts.map(cp=>cp.status);
-  part.status = aggregateStatus(own ? [own, ...childStatuses] : childStatuses);
-}
-function recomputeAll(machine){
-  machine.parts.forEach(recomputePart);
-  machine.status = aggregateStatus(machine.parts.map(p=>p.status));
-}
-
-/* ============ PROGRESS HELPERS ============ */
-function partProgress(part){
-  let done = part.steps.filter(s=>s.status==='Complete').length;
-  let total = part.steps.length;
-  part.parts.forEach(cp=>{ const pr = partProgress(cp); done += pr.done; total += pr.total; });
-  return {done, total};
-}
-function machineProgress(machine){
-  let done=0, total=0;
-  machine.parts.forEach(p=>{ const pr = partProgress(p); done+=pr.done; total+=pr.total; });
-  return {done, total};
-}
-
-/* ============ EQUIPMENT STATUS ============ */
-function computeEquipmentStatus(eq){
-  if(eq.maintenance) return 'Maintenance';
+/* ============ MACHINE STATUS LOGIC ============ */
+function computeMachineStatus(m){
+  if(m.maintenance) return 'Maintenance';
   let linked = false;
-  for(const m of DB.machines){
-    if(m.status === 'Complete') continue;
-    let anyActive = false, anyLinked = false;
-    walkSteps(m.parts, s=>{
-      if(s.equipment === eq.name){ anyLinked = true; if(s.status === 'Active') anyActive = true; }
-    });
-    if(anyLinked) linked = true;
-    if(anyActive) return 'Running';
+  for(const p of DB.projects){
+    if(p.status === 'Complete') continue;
+    for(const s of p.steps){
+      if(s.machine === m.name){
+        linked = true;
+        if(s.status === 'Active') return 'Running';
+      }
+    }
   }
   return linked ? 'Stopped' : 'Idle';
 }
 
-/* ============ RENDER: NAV / SUBHEADER ============ */
+/* ============ RENDER: NAV ============ */
 function renderNav(){
   document.querySelectorAll('.nav-btn').forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.view === state.view || (state.view==='detail' && btn.dataset.view==='machines'));
+    btn.classList.toggle('active', btn.dataset.view === state.view || (state.view==='detail' && btn.dataset.view==='projects'));
   });
 }
+
 function renderSubheader(){
   const sub = document.getElementById('subheader');
   if(state.view === 'detail'){
-    const m = DB.machines.find(x=>x.id===state.currentMachineId);
+    const p = DB.projects.find(x=>x.id===state.currentProjectId);
     sub.innerHTML = `
       <div class="back-row">
         <button class="back-btn" id="backBtn">← Back</button>
-        <button class="edit-btn" id="editMachineBtn">Edit Machine</button>
+        <button class="edit-btn" id="editProjectBtn">Edit Project</button>
       </div>`;
-    sub.querySelector('#backBtn').onclick = ()=>{ state.view='machines'; state.currentMachineId=null; render(); };
-    sub.querySelector('#editMachineBtn').onclick = ()=>{ startEditMachine(m.id); };
+    sub.querySelector('#backBtn').onclick = ()=>{
+      if(p && p.parentId){ state.currentProjectId = p.parentId; }
+      else { state.view='projects'; state.currentProjectId=null; }
+      render();
+    };
+    sub.querySelector('#editProjectBtn').onclick = ()=>{ startEditProject(p.id); };
   } else {
     sub.innerHTML = '';
   }
@@ -454,105 +416,102 @@ function render(){
   renderNav();
   renderSubheader();
   const main = document.getElementById('main');
-  if(state.view === 'machines') return renderMachinesList(main);
+  if(state.view === 'projects') return renderProjectsList(main);
   if(state.view === 'completed') return renderCompletedList(main);
-  if(state.view === 'equipment') return renderEquipment(main);
-  if(state.view === 'add') return renderAddMachine(main);
-  if(state.view === 'detail') return renderMachineDetail(main);
+  if(state.view === 'machines') return renderMachines(main);
+  if(state.view === 'add') return renderAddProject(main);
+  if(state.view === 'detail') return renderProjectDetail(main);
 }
 
-/* ============ MACHINES LIST / COMPLETED ============ */
-function renderMachinesList(main){
-  const active = DB.machines.filter(m=>m.status !== 'Complete');
-  let html = `<h1 class="page-title">Active Machines</h1>`;
+function renderProjectsList(main){
+  const active = DB.projects.filter(p=>!p.parentId && p.status !== 'Complete');
+  let html = `<h1 class="page-title">Active Projects</h1>`;
   if(active.length===0){
-    html += `<div class="empty">No active machines yet.<br>Tap "Add Machine" below to start one.</div>`;
+    html += `<div class="empty">No active projects yet.<br>Tap "Add Project" below to start one.</div>`;
   } else {
-    active.forEach(m=>{
-      const {done,total} = machineProgress(m);
+    active.forEach(p=>{
+      const {done,total} = projectProgress(p);
       const pct = total ? Math.round((done/total)*100) : 0;
-      const partCount = m.parts.length;
       html += `
-        <div class="card" data-id="${m.id}">
+        <div class="card" data-id="${p.id}">
           <div class="card-top">
-            <h3>${escapeHtml(m.name)}</h3>
-            <span class="badge ${m.status}">${m.status}</span>
+            <h3>${escapeHtml(p.name)}</h3>
+            <span class="badge ${p.status}">${p.status}</span>
           </div>
-          <div class="dates">${fmtDate(m.startDate)} — ${fmtDate(m.endDate)}</div>
+          <div class="dates">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
           <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-          <div class="steps-count">${done} / ${total} Steps Completed · ${partCount} part${partCount===1?'':'s'}</div>
+          <div class="steps-count">${done} / ${total} Completed</div>
         </div>`;
     });
   }
   main.innerHTML = html;
   main.querySelectorAll('.card').forEach(c=>{
-    c.onclick = ()=>{ state.view='detail'; state.currentMachineId=c.dataset.id; render(); };
+    c.onclick = ()=>{ state.view='detail'; state.currentProjectId=c.dataset.id; render(); };
   });
 }
 
 function renderCompletedList(main){
-  const done = DB.machines.filter(m=>m.status === 'Complete');
-  let html = `<h1 class="page-title">Completed Machines</h1>`;
+  const done = DB.projects.filter(p=>!p.parentId && p.status === 'Complete');
+  let html = `<h1 class="page-title">Completed Projects</h1>`;
   if(done.length===0){
-    html += `<div class="empty">No completed machines yet.</div>`;
+    html += `<div class="empty">No completed projects yet.</div>`;
   } else {
-    done.forEach(m=>{
-      const pr = machineProgress(m);
+    done.forEach(p=>{
+      const {done:d,total:t} = projectProgress(p);
       html += `
-        <div class="card" data-id="${m.id}">
+        <div class="card" data-id="${p.id}">
           <div class="card-top">
-            <h3>${escapeHtml(m.name)}</h3>
+            <h3>${escapeHtml(p.name)}</h3>
             <span class="badge Complete">COMPLETE</span>
           </div>
-          <div class="dates">${fmtDate(m.startDate)} — ${fmtDate(m.endDate)}</div>
+          <div class="dates">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
           <div class="progress-track"><div class="progress-fill done" style="width:100%"></div></div>
-          <div class="steps-count">${pr.total} / ${pr.total} Steps Completed</div>
+          <div class="steps-count">${d} / ${t} Completed</div>
         </div>`;
     });
   }
   main.innerHTML = html;
   main.querySelectorAll('.card').forEach(c=>{
-    c.onclick = ()=>{ state.view='detail'; state.currentMachineId=c.dataset.id; render(); };
+    c.onclick = ()=>{ state.view='detail'; state.currentProjectId=c.dataset.id; render(); };
   });
 }
 
-/* ============ EQUIPMENT TAB ============ */
-function renderEquipment(main){
-  let html = `<h1 class="page-title">Equipment</h1>`;
+function renderMachines(main){
+  let html = `<h1 class="page-title">Machines</h1>`;
   html += `
     <div class="form-card">
-      <h2>Add Equipment</h2>
-      <input type="text" id="newEquipName" placeholder="Equipment Name (e.g. VMC #1)">
-      <button class="btn" id="addEquipBtn">ADD EQUIPMENT</button>
+      <h2>Add Machine</h2>
+      <input type="text" id="newMachineName" placeholder="Machine Name">
+      <button class="btn" id="addMachineBtn">ADD MACHINE</button>
     </div>`;
 
-  if(DB.equipment.length === 0){
-    html += `<div class="empty">No equipment yet.<br>Add some above to link it to build steps.</div>`;
+  if(DB.machines.length === 0){
+    html += `<div class="empty">No machines yet.<br>Add one above to track it here and use it in project steps.</div>`;
   } else {
-    DB.equipment.forEach(eq=>{
-      const status = computeEquipmentStatus(eq);
+    DB.machines.forEach(m=>{
+      const status = computeMachineStatus(m);
       html += `
-        <div class="card" data-eid="${eq.id}">
+        <div class="card" data-mid="${m.id}">
           <div class="card-top">
-            <h3>${escapeHtml(eq.name)}</h3>
+            <h3>${escapeHtml(m.name)}</h3>
             <span class="badge ${status}">${status.toUpperCase()}</span>
           </div>
           <div class="machine-status">
-            ${eq.maintenance
-              ? escapeHtml(eq.maintenanceNote || 'No maintenance notes added.')
-              : 'Status is tracked automatically from linked build steps.'}
+            ${m.maintenance
+              ? escapeHtml(m.maintenanceNote || 'No maintenance notes added.')
+              : 'Status is tracked automatically from linked project steps.'}
           </div>
           <div class="machine-actions">
-            ${eq.maintenance
-              ? `<button class="btn small purple edit-maintenance" data-id="${eq.id}">Edit Notes</button>
-                 <button class="btn small green return-service" data-id="${eq.id}">Return to Service</button>`
-              : `<button class="btn small purple start-maintenance" data-id="${eq.id}">Start Maintenance</button>`}
-            <button class="remove-x remove-equip" data-id="${eq.id}">Remove</button>
+            ${m.maintenance
+              ? `<button class="btn small purple edit-maintenance" data-id="${m.id}">Edit Notes</button>
+                 <button class="btn small green return-service" data-id="${m.id}">Return to Service</button>`
+              : `<button class="btn small purple start-maintenance" data-id="${m.id}">Start Maintenance</button>`}
+            <button class="btn small remove-machine" data-id="${m.id}" style="border-color:var(--red);color:var(--red);background:#fff;">Remove</button>
           </div>
-          ${state.maintenanceEditId === eq.id ? `
+          ${state.maintenanceEditId === m.id ? `
             <div class="inline-form">
-              <textarea id="maintNote_${eq.id}" placeholder="Maintenance notes">${escapeHtml(eq.maintenanceNote||'')}</textarea>
-              <button class="btn green save-maintenance" data-id="${eq.id}">Save Notes</button>
+              <textarea id="maintNote_${m.id}" placeholder="Maintenance notes (technician, expected completion, etc.)">${escapeHtml(m.maintenanceNote||'')}</textarea>
+              <button class="btn green save-maintenance" data-id="${m.id}">Save Notes</button>
             </div>` : ''}
         </div>`;
     });
@@ -560,24 +519,25 @@ function renderEquipment(main){
 
   main.innerHTML = html;
 
-  document.getElementById('addEquipBtn').onclick = async ()=>{
-    const input = document.getElementById('newEquipName');
+  document.getElementById('addMachineBtn').onclick = async ()=>{
+    const input = document.getElementById('newMachineName');
     const name = input.value.trim();
-    if(!name){ showToast('Equipment name is required'); return; }
-    if(DB.equipment.some(e=>e.name.toLowerCase()===name.toLowerCase())){
-      showToast('Equipment with that name already exists'); return;
+    if(!name){ showToast('Machine name is required'); return; }
+    if(DB.machines.some(m=>m.name.toLowerCase()===name.toLowerCase())){
+      showToast('A machine with that name already exists');
+      return;
     }
-    DB.equipment.push({ id: uid(), name, maintenance:false, maintenanceNote:'' });
+    DB.machines.push({ id: uid(), name, maintenance:false, maintenanceNote:'' });
     await saveData(DB);
-    showToast('Equipment added');
+    showToast('Machine added');
     render();
   };
 
   main.querySelectorAll('.start-maintenance').forEach(btn=>{
     btn.onclick = async ()=>{
-      const eq = DB.equipment.find(x=>x.id===btn.dataset.id);
-      eq.maintenance = true;
-      state.maintenanceEditId = eq.id;
+      const m = DB.machines.find(x=>x.id===btn.dataset.id);
+      m.maintenance = true;
+      state.maintenanceEditId = m.id;
       await saveData(DB);
       render();
     };
@@ -587,8 +547,8 @@ function renderEquipment(main){
   });
   main.querySelectorAll('.save-maintenance').forEach(btn=>{
     btn.onclick = async ()=>{
-      const eq = DB.equipment.find(x=>x.id===btn.dataset.id);
-      eq.maintenanceNote = document.getElementById('maintNote_'+eq.id).value.trim();
+      const m = DB.machines.find(x=>x.id===btn.dataset.id);
+      m.maintenanceNote = document.getElementById('maintNote_'+m.id).value.trim();
       state.maintenanceEditId = null;
       await saveData(DB);
       showToast('Maintenance notes saved');
@@ -597,379 +557,5 @@ function renderEquipment(main){
   });
   main.querySelectorAll('.return-service').forEach(btn=>{
     btn.onclick = async ()=>{
-      const eq = DB.equipment.find(x=>x.id===btn.dataset.id);
-      eq.maintenance = false;
-      eq.maintenanceNote = '';
-      state.maintenanceEditId = null;
-      await saveData(DB);
-      showToast(`${eq.name} returned to automated tracking`);
-      render();
-    };
-  });
-  main.querySelectorAll('.remove-equip').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const eq = DB.equipment.find(x=>x.id===btn.dataset.id);
-      if(confirm(`Remove ${eq.name}? This won't remove it from steps that already reference it.`)){
-        DB.equipment = DB.equipment.filter(x=>x.id!==eq.id);
-        await saveData(DB);
-        showToast('Equipment removed');
-        render();
-      }
-    };
-  });
-}
-
-/* ============ ADD / EDIT MACHINE (shell only — parts/steps live in detail view) ============ */
-function newDraft(){
-  return { id:null, name:'', startDate:'', endDate:'', status:'Active', parts:[] };
-}
-
-function startEditMachine(machineId){
-  const m = DB.machines.find(x=>x.id===machineId);
-  state.editingMachine = JSON.parse(JSON.stringify(m));
-  state.view = 'add';
-  render();
-}
-
-function renderAddMachine(main){
-  if(!state.editingMachine) state.editingMachine = newDraft();
-  const d = state.editingMachine;
-  const isEdit = !!d.id;
-
-  main.innerHTML = `
-    <div class="form-card">
-      <h2>${isEdit ? 'Edit Machine' : 'New Machine'}</h2>
-      <input type="text" id="mName" placeholder="Machine Name" value="${escapeHtml(d.name)}">
-      <div class="row2">
-        <div><label>Start Date</label><input type="date" id="mStart" value="${d.startDate||''}"></div>
-        <div><label>End Date</label><input type="date" id="mEnd" value="${d.endDate||''}"></div>
-      </div>
-      ${!isEdit ? `<div class="hint">You'll add parts (and sub-parts) on the next screen.</div>` : ''}
-    </div>
-
-    <button class="btn green" id="commitBtn">${isEdit ? 'SAVE MACHINE' : 'CREATE MACHINE'}</button>
-    ${isEdit ? `<button class="btn grey" id="cancelEditBtn" style="margin-top:10px;">Cancel</button>
-    <button class="btn" id="deleteMachineBtn" style="margin-top:10px;background:#b3212f;">Delete Machine</button>` : ''}
-  `;
-
-  document.getElementById('mName').oninput = e => d.name = e.target.value;
-  document.getElementById('mStart').oninput = e => d.startDate = e.target.value;
-  document.getElementById('mEnd').oninput = e => d.endDate = e.target.value;
-
-  document.getElementById('commitBtn').onclick = async ()=>{
-    if(!d.name.trim()){ showToast('Machine name is required'); return; }
-    if(!d.startDate || !d.endDate){ showToast('Start and end dates are required'); return; }
-
-    recomputeAll(d);
-
-    if(isEdit){
-      const idx = DB.machines.findIndex(x=>x.id===d.id);
-      DB.machines[idx] = d;
-    } else {
-      d.id = uid();
-      DB.machines.push(d);
-    }
-    await saveData(DB);
-    showToast(isEdit ? 'Machine saved' : 'Machine created');
-    state.editingMachine = null;
-    state.view = 'detail';
-    state.currentMachineId = d.id;
-    render();
-  };
-
-  if(isEdit){
-    document.getElementById('cancelEditBtn').onclick = ()=>{
-      state.editingMachine = null;
-      state.view = 'detail';
-      render();
-    };
-    document.getElementById('deleteMachineBtn').onclick = async ()=>{
-      if(confirm('Delete this machine permanently?')){
-        DB.machines = DB.machines.filter(x=>x.id!==d.id);
-        await saveData(DB);
-        state.editingMachine = null;
-        state.view = 'machines';
-        render();
-      }
-    };
-  }
-}
-
-/* ============ MACHINE DETAIL (the recursive part tree) ============ */
-function renderStepHtml(part, machineId, s){
-  const cls = s.status==='Complete' ? 'complete' : (s.status==='Active' ? 'active-step' : 'none-step');
-  let html = `<div class="detail-step ${cls}">
-    <div class="detail-step-top">
-      <h4>${escapeHtml(s.name)}${s.equipment ? ' ('+escapeHtml(s.equipment)+')' : ''}</h4>
-      <span class="badge ${s.status}">${s.status}</span>
-    </div>`;
-  if(s.status === 'Complete'){
-    html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy||'—')} ${s.time? '| '+escapeHtml(s.time):''} ${s.description? '| '+escapeHtml(s.description):''}</div>
-      <div style="margin-top:8px;"><button class="btn small edit-step-status" data-mid="${machineId}" data-pid="${part.id}" data-id="${s.id}">Reopen step</button></div>`;
-  } else if(state.activeStepInputId === s.id){
-    html += `
-      <div class="inline-form">
-        <input type="text" id="doneBy_${s.id}" placeholder="Done by?" value="${escapeHtml(s.doneBy||'')}">
-        <select id="statusSel_${s.id}">
-          <option value="None" ${s.status==='None'?'selected':''}>None</option>
-          <option value="Active" ${s.status==='Active'?'selected':''}>Active</option>
-          <option value="Complete">Complete</option>
-        </select>
-        <textarea id="desc_${s.id}" placeholder="Description">${escapeHtml(s.description||'')}</textarea>
-        <button class="btn green mark-done" data-mid="${machineId}" data-pid="${part.id}" data-id="${s.id}">Done</button>
-      </div>`;
-  } else {
-    html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy) || 'None'}</div>
-      <div style="margin-top:8px;display:flex;gap:6px;">
-        <button class="btn small open-step" data-id="${s.id}">Fill in</button>
-        <button class="remove-x remove-step" data-mid="${machineId}" data-pid="${part.id}" data-id="${s.id}">Del</button>
-      </div>`;
-  }
-  html += `</div>`;
-  return html;
-}
-
-// Renders one part card, plus (recursively) all of its sub-parts nested inside it.
-function renderPartNode(part, machineId, depth, equipOptions){
-  const collapsed = !!state.collapsedParts[part.id];
-  const pr = partProgress(part);
-  const pct = pr.total ? Math.round(pr.done/pr.total*100) : 0;
-  const indent = Math.min(depth, 4) * 12;
-  const subCount = part.parts.length;
-
-  let html = `<div class="part-card" style="margin-left:${indent}px">
-    <div class="part-head toggle-part" data-id="${part.id}">
-      <span class="collapse-ic">${collapsed?'▶':'▼'}</span>
-      <h4>${escapeHtml(part.name)}</h4>
-      <span class="badge ${part.status}">${part.status}</span>
-    </div>
-    <div class="mini-progress-track"><div class="mini-progress-fill ${part.status==='Complete'?'done':''}" style="width:${pct}%"></div></div>
-    <div class="part-meta">${pr.done} / ${pr.total} steps${subCount ? ' · '+subCount+' sub-part'+(subCount===1?'':'s') : ''}
-      <button class="remove-x remove-part" data-mid="${machineId}" data-id="${part.id}">Remove</button>
-    </div>`;
-
-  if(!collapsed){
-    html += `<div class="part-body">`;
-
-    if(part.steps.length===0 && part.parts.length===0){
-      html += `<div class="empty small">No steps or sub-parts yet.</div>`;
-    }
-
-    part.steps.forEach(s=>{ html += renderStepHtml(part, machineId, s); });
-
-    html += `<div class="tree-add-form">
-      <div class="tree-label">Add Step</div>
-      <input type="number" id="stepNo_${part.id}" placeholder="Step No." min="1">
-      <input type="text" id="stepName_${part.id}" placeholder="Step Name/Function">
-      <select id="stepEquip_${part.id}">
-        <option value="">Select Equipment</option>
-        ${equipOptions}
-      </select>
-      <button class="btn small add-step-btn" data-mid="${machineId}" data-pid="${part.id}">ADD STEP</button>
-    </div>`;
-
-    part.parts.forEach(child=>{ html += renderPartNode(child, machineId, depth+1, equipOptions); });
-
-    html += `<div class="tree-add-form">
-      <div class="tree-label">Add Sub-Part</div>
-      <input type="text" id="newSubPartName_${part.id}" placeholder="Sub-Part Name (e.g. Piston Assembly)">
-      <button class="btn small add-subpart-btn" data-mid="${machineId}" data-pid="${part.id}">ADD SUB-PART</button>
-    </div>`;
-
-    html += `</div>`; // part-body
-  }
-  html += `</div>`; // part-card
-  return html;
-}
-
-function renderMachineDetail(main){
-  const m = DB.machines.find(x=>x.id===state.currentMachineId);
-  if(!m){ state.view='machines'; return render(); }
-
-  let html = `
-    <h1 class="page-title" style="margin-bottom:2px;">${escapeHtml(m.name)}</h1>
-    <div class="dates" style="margin-bottom:6px;">${fmtDate(m.startDate)} — ${fmtDate(m.endDate)}</div>
-    <div style="margin-bottom:14px;"><span class="badge ${m.status}">${m.status}</span></div>
-  `;
-
-  const equipOptions = DB.equipment.map(e=>`<option value="${escapeHtml(e.name)}">${escapeHtml(e.name)}</option>`).join('');
-  const cloneOptions = collectCloneOptions(m.parts, '')
-    .map(o=>`<option value="${o.id}">${escapeHtml(o.label)} (${o.count} steps)</option>`)
-    .join('');
-
-  html += `
-    <div class="form-card">
-      <h2>Add Part</h2>
-      <input type="text" id="newPartName" placeholder="Part Name (e.g. Base Frame)">
-      ${cloneOptions ? `
-        <select id="clonePart">
-          <option value="">Start with blank steps</option>
-          ${cloneOptions}
-        </select>
-        <div class="hint">Optional — copies all steps from another part as a starting point.</div>
-      ` : ''}
-      <button class="btn" id="addPartBtn">ADD PART</button>
-    </div>`;
-
-  if(m.parts.length===0){
-    html += `<div class="empty">No parts added yet.<br>Add one above to start building this machine.</div>`;
-  } else {
-    m.parts.forEach(part=>{ html += renderPartNode(part, m.id, 0, equipOptions); });
-  }
-
-  main.innerHTML = html;
-
-  /* ---- add top-level part ---- */
-  document.getElementById('addPartBtn').onclick = async ()=>{
-    const input = document.getElementById('newPartName');
-    const name = input.value.trim();
-    if(!name){ showToast('Part name is required'); return; }
-
-    const cloneSel = document.getElementById('clonePart');
-    let steps = [];
-    if(cloneSel && cloneSel.value){
-      const source = findPart(m.parts, cloneSel.value);
-      if(source){
-        steps = source.steps.map(s=>({
-          id: uid(), stepNo: s.stepNo, name: s.name, equipment: s.equipment,
-          status: 'None', doneBy: '', time: '', description: ''
-        }));
-      }
-    }
-    const p = newPart(name);
-    p.steps = steps;
-    m.parts.push(p);
-    recomputeAll(m);
-    await saveData(DB);
-    showToast(steps.length ? `Part added with ${steps.length} cloned steps` : 'Part added');
-    render();
-  };
-
-  /* ---- collapse toggle (works at any depth) ---- */
-  main.querySelectorAll('.toggle-part').forEach(el=>{
-    el.onclick = ()=>{ const id=el.dataset.id; state.collapsedParts[id] = !state.collapsedParts[id]; render(); };
-  });
-
-  /* ---- remove part / sub-part at any depth ---- */
-  main.querySelectorAll('.remove-part').forEach(btn=>{
-    btn.onclick = async ()=>{
-      if(confirm('Remove this part and everything nested inside it (sub-parts and steps)?')){
-        removePart(m.parts, btn.dataset.id);
-        recomputeAll(m);
-        await saveData(DB);
-        render();
-      }
-    };
-  });
-
-  /* ---- add sub-part under any part ---- */
-  main.querySelectorAll('.add-subpart-btn').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const parent = findPart(m.parts, btn.dataset.pid);
-      const input = document.getElementById('newSubPartName_'+btn.dataset.pid);
-      const name = input.value.trim();
-      if(!name){ showToast('Sub-part name is required'); return; }
-      parent.parts.push(newPart(name));
-      recomputeAll(m);
-      await saveData(DB);
-      showToast('Sub-part added');
-      render();
-    };
-  });
-
-  /* ---- steps: add / remove / fill in / mark done ---- */
-  main.querySelectorAll('.add-step-btn').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const part = findPart(m.parts, btn.dataset.pid);
-      const no = document.getElementById('stepNo_'+part.id).value;
-      const name = document.getElementById('stepName_'+part.id).value.trim();
-      const equipment = document.getElementById('stepEquip_'+part.id).value;
-      if(!name){ showToast('Step name is required'); return; }
-      part.steps.push({
-        id: uid(), stepNo: no ? parseInt(no,10) : part.steps.length+1,
-        name, equipment, status:'None', doneBy:'', time:'', description:''
-      });
-      part.steps.sort((a,b)=>(a.stepNo||0)-(b.stepNo||0));
-      recomputeAll(m);
-      await saveData(DB);
-      render();
-    };
-  });
-
-  main.querySelectorAll('.remove-step').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const part = findPart(m.parts, btn.dataset.pid);
-      part.steps = part.steps.filter(s=>s.id!==btn.dataset.id);
-      recomputeAll(m);
-      await saveData(DB);
-      render();
-    };
-  });
-
-  main.querySelectorAll('.open-step').forEach(btn=>{
-    btn.onclick = ()=>{ state.activeStepInputId = btn.dataset.id; render(); };
-  });
-
-  main.querySelectorAll('.edit-step-status').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const part = findPart(m.parts, btn.dataset.pid);
-      const s = part.steps.find(x=>x.id===btn.dataset.id);
-      s.status = 'Active';
-      recomputeAll(m);
-      await saveData(DB);
-      state.activeStepInputId = s.id;
-      render();
-    };
-  });
-
-  main.querySelectorAll('.mark-done').forEach(btn=>{
-    btn.onclick = async ()=>{
-      const part = findPart(m.parts, btn.dataset.pid);
-      const s = part.steps.find(x=>x.id===btn.dataset.id);
-      s.doneBy = document.getElementById('doneBy_'+s.id).value.trim();
-      s.status = document.getElementById('statusSel_'+s.id).value;
-      s.description = document.getElementById('desc_'+s.id).value.trim();
-      if(s.status === 'Complete'){
-        const now = new Date();
-        s.time = now.getDate()+' - '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-      }
-      state.activeStepInputId = null;
-
-      const wasComplete = m.status === 'Complete';
-      recomputeAll(m);
-      if(m.status === 'Complete' && !wasComplete){
-        showToast('All steps complete — machine moved to Completed!');
-      }
-      await saveData(DB);
-      render();
-    };
-  });
-}
-
-/* ============ BOOT ============ */
-async function bootApp(){
-  const phone = document.getElementById('phone');
-  phone.innerHTML = `<div class="login-loading">Loading your data…</div>`;
-  try{
-    await loadData();
-    DB.machines.forEach(recomputeAll);
-    renderAppShell();
-    render();
-  }catch(e){
-    console.error(e);
-    phone.innerHTML = `<div class="login-loading">Couldn't load your data.<br><br>
-      <button class="btn" onclick="bootApp()">Retry</button></div>`;
-  }
-}
-
-(async function init(){
-  const { data: { session } } = await sb.auth.getSession();
-  if(session){
-    bootApp();
-  } else {
-    renderLogin();
-  }
-})();
-</script>
-</body>
-</html>
+      const m = DB.machines.find(x=>x.id===btn.dataset.id);
+      m.maintenance =
