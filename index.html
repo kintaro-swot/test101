@@ -329,15 +329,9 @@ function fmtDate(str){
   return `${d} ${months[parseInt(m,10)-1]} ${y}`;
 }
 function projectProgress(p){
-  const children = DB.projects.filter(x=>x.parentId===p.id);
-  const totalSteps = p.steps.length;
-  const doneSteps = p.steps.filter(s=>s.status==='Complete').length;
-  const totalChildren = children.length;
-  const doneChildren = children.filter(c=>c.status==='Complete').length;
-  return { done: doneSteps+doneChildren, total: totalSteps+totalChildren };
-}
-function getChildren(p){
-  return DB.projects.filter(x=>x.parentId===p.id);
+  const total = p.steps.length;
+  const done = p.steps.filter(s=>s.status==='Complete').length;
+  return {done, total};
 }
 function escapeHtml(str){
   return (str||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -345,28 +339,14 @@ function escapeHtml(str){
 
 /* ============ PROJECT STATUS LOGIC ============ */
 function recomputeProjectStatus(p){
-  const children = getChildren(p);
-  children.forEach(recomputeProjectStatus); // post-order: children resolved before parent
-
-  const totalSteps = p.steps.length;
-  const doneSteps = p.steps.filter(s=>s.status==='Complete').length;
-  const anyStepActive = p.steps.some(s=>s.status==='Active');
-
-  const totalChildren = children.length;
-  const doneChildren = children.filter(c=>c.status==='Complete').length;
-  const anyChildActive = children.some(c=>c.status==='Running' || c.status==='Active');
-
-  const totalUnits = totalSteps + totalChildren;
-  const doneUnits = doneSteps + doneChildren;
-
-  if(totalUnits === 0){ p.status = 'Active'; return; }
-  if(doneUnits === totalUnits){ p.status = 'Complete'; return; }
-  if(anyStepActive || anyChildActive){ p.status = 'Running'; return; }
-  if(doneUnits > 0){ p.status = 'Stopped'; return; }
+  const total = p.steps.length;
+  if(total === 0){ p.status = 'Active'; return; }
+  const doneCount = p.steps.filter(s=>s.status==='Complete').length;
+  if(doneCount === total){ p.status = 'Complete'; return; }
+  const anyRunning = p.steps.some(s=>s.status==='Active');
+  if(anyRunning){ p.status = 'Running'; return; }
+  if(doneCount > 0){ p.status = 'Stopped'; return; }
   p.status = 'Active';
-}
-function recomputeAllStatuses(){
-  DB.projects.filter(p=>!p.parentId).forEach(recomputeProjectStatus);
 }
 
 /* ============ MACHINE STATUS LOGIC ============ */
@@ -401,11 +381,7 @@ function renderSubheader(){
         <button class="back-btn" id="backBtn">← Back</button>
         <button class="edit-btn" id="editProjectBtn">Edit Project</button>
       </div>`;
-    sub.querySelector('#backBtn').onclick = ()=>{
-      if(p && p.parentId){ state.currentProjectId = p.parentId; }
-      else { state.view='projects'; state.currentProjectId=null; }
-      render();
-    };
+    sub.querySelector('#backBtn').onclick = ()=>{ state.view='projects'; state.currentProjectId=null; render(); };
     sub.querySelector('#editProjectBtn').onclick = ()=>{ startEditProject(p.id); };
   } else {
     sub.innerHTML = '';
@@ -424,7 +400,7 @@ function render(){
 }
 
 function renderProjectsList(main){
-  const active = DB.projects.filter(p=>!p.parentId && p.status !== 'Complete');
+  const active = DB.projects.filter(p=>p.status !== 'Complete');
   let html = `<h1 class="page-title">Active Projects</h1>`;
   if(active.length===0){
     html += `<div class="empty">No active projects yet.<br>Tap "Add Project" below to start one.</div>`;
@@ -440,7 +416,7 @@ function renderProjectsList(main){
           </div>
           <div class="dates">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
           <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-          <div class="steps-count">${done} / ${total} Completed</div>
+          <div class="steps-count">${done} / ${total} Steps Completed</div>
         </div>`;
     });
   }
@@ -451,13 +427,12 @@ function renderProjectsList(main){
 }
 
 function renderCompletedList(main){
-  const done = DB.projects.filter(p=>!p.parentId && p.status === 'Complete');
+  const done = DB.projects.filter(p=>p.status === 'Complete');
   let html = `<h1 class="page-title">Completed Projects</h1>`;
   if(done.length===0){
     html += `<div class="empty">No completed projects yet.</div>`;
   } else {
     done.forEach(p=>{
-      const {done:d,total:t} = projectProgress(p);
       html += `
         <div class="card" data-id="${p.id}">
           <div class="card-top">
@@ -466,7 +441,7 @@ function renderCompletedList(main){
           </div>
           <div class="dates">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
           <div class="progress-track"><div class="progress-fill done" style="width:100%"></div></div>
-          <div class="steps-count">${d} / ${t} Completed</div>
+          <div class="steps-count">${p.steps.length} / ${p.steps.length} Steps Completed</div>
         </div>`;
     });
   }
@@ -579,8 +554,8 @@ function renderMachines(main){
   });
 }
 
-function newDraft(parentId){
-  return { id:null, parentId: parentId||null, name:'', startDate:'', endDate:'', status:'Active', steps:[] };
+function newDraft(){
+  return { id:null, name:'', startDate:'', endDate:'', status:'Active', steps:[] };
 }
 
 function startEditProject(projectId){
@@ -682,6 +657,9 @@ function renderAddProject(main){
   document.getElementById('commitBtn').onclick = async ()=>{
     if(!d.name.trim()){ showToast('Project name is required'); return; }
     if(!d.startDate || !d.endDate){ showToast('Start and end dates are required'); return; }
+    if(d.steps.length===0){ showToast('Add at least one step'); return; }
+
+    recomputeProjectStatus(d);
 
     if(isEdit){
       const idx = DB.projects.findIndex(x=>x.id===d.id);
@@ -690,21 +668,11 @@ function renderAddProject(main){
       d.id = uid();
       DB.projects.push(d);
     }
-    recomputeAllStatuses();
     await saveData(DB);
     showToast(isEdit ? 'Project saved' : 'Project created');
     state.editingProject = null;
-    if(isEdit){
-      state.view = 'detail';
-      state.currentProjectId = d.id;
-    } else if(d.parentId){
-      // land on the new sub-project so its steps/sub-projects can be added right away
-      state.view = 'detail';
-      state.currentProjectId = d.id;
-    } else {
-      state.view = 'projects';
-      state.currentProjectId = d.id;
-    }
+    state.view = isEdit ? 'detail' : 'projects';
+    state.currentProjectId = d.id;
     render();
   };
 
@@ -715,28 +683,11 @@ function renderAddProject(main){
       render();
     };
     document.getElementById('deleteProjectBtn').onclick = async ()=>{
-      const hasChildren = DB.projects.some(x=>x.parentId===d.id);
-      const msg = hasChildren
-        ? 'Delete this project permanently? This will also delete all of its sub-projects.'
-        : 'Delete this project permanently?';
-      if(confirm(msg)){
-        const toDelete = new Set();
-        (function collect(id){
-          toDelete.add(id);
-          DB.projects.filter(x=>x.parentId===id).forEach(c=>collect(c.id));
-        })(d.id);
-        const parentId = d.parentId;
-        DB.projects = DB.projects.filter(x=>!toDelete.has(x.id));
-        recomputeAllStatuses();
+      if(confirm('Delete this project permanently?')){
+        DB.projects = DB.projects.filter(x=>x.id!==d.id);
         await saveData(DB);
         state.editingProject = null;
-        if(parentId && DB.projects.some(x=>x.id===parentId)){
-          state.view = 'detail';
-          state.currentProjectId = parentId;
-        } else {
-          state.view = 'projects';
-          state.currentProjectId = null;
-        }
+        state.view = 'projects';
         render();
       }
     };
@@ -752,36 +703,6 @@ function renderProjectDetail(main){
     <div class="dates" style="margin-bottom:6px;">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
     <div style="margin-bottom:14px;"><span class="badge ${p.status}">${p.status}</span></div>
   `;
-
-  const children = getChildren(p);
-  html += `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 10px;">
-      <h2 style="font-size:15px;color:var(--red);margin:0;">Sub-Projects</h2>
-      <button class="btn small" id="addSubBtn">+ Add Sub-Project</button>
-    </div>`;
-  if(children.length===0){
-    html += `<div class="empty small">No sub-projects yet.</div>`;
-  } else {
-    children.forEach(c=>{
-      const {done,total} = projectProgress(c);
-      const pct = total ? Math.round((done/total)*100) : 0;
-      html += `
-        <div class="card" data-subid="${c.id}">
-          <div class="card-top">
-            <h3>📁 ${escapeHtml(c.name)}</h3>
-            <span class="badge ${c.status}">${c.status}</span>
-          </div>
-          <div class="dates">${fmtDate(c.startDate)} — ${fmtDate(c.endDate)}</div>
-          <div class="progress-track"><div class="progress-fill ${c.status==='Complete'?'done':''}" style="width:${pct}%"></div></div>
-          <div class="steps-count">${done} / ${total} Completed</div>
-        </div>`;
-    });
-  }
-
-  html += `<h2 style="font-size:15px;color:var(--red);margin:18px 0 10px;">Steps</h2>`;
-  if(p.steps.length===0){
-    html += `<div class="empty small">No steps on this project.</div>`;
-  }
 
   p.steps.forEach((s, idx)=>{
     const cls = s.status==='Complete' ? 'complete' : (s.status==='Active' ? 'active-step' : 'none-step');
@@ -815,19 +736,6 @@ function renderProjectDetail(main){
 
   main.innerHTML = html;
 
-  document.getElementById('addSubBtn').onclick = ()=>{
-    state.editingProject = newDraft(p.id);
-    state.view = 'add';
-    render();
-  };
-  main.querySelectorAll('[data-subid]').forEach(c=>{
-    c.onclick = ()=>{
-      state.currentProjectId = c.dataset.subid;
-      state.activeStepInputId = null;
-      render();
-    };
-  });
-
   main.querySelectorAll('.open-step').forEach(btn=>{
     btn.onclick = ()=>{ state.activeStepInputId = btn.dataset.id; render(); };
   });
@@ -836,7 +744,7 @@ function renderProjectDetail(main){
     btn.onclick = async ()=>{
       const s = p.steps.find(x=>x.id===btn.dataset.id);
       s.status = 'Active';
-      recomputeAllStatuses();
+      recomputeProjectStatus(p);
       await saveData(DB);
       state.activeStepInputId = s.id;
       render();
@@ -856,7 +764,7 @@ function renderProjectDetail(main){
       state.activeStepInputId = null;
 
       const wasFinished = p.status === 'Complete';
-      recomputeAllStatuses();
+      recomputeProjectStatus(p);
       if(p.status === 'Complete' && !wasFinished){
         showToast('All steps complete — project moved to Completed!');
       }
@@ -874,7 +782,7 @@ async function bootApp(){
   phone.innerHTML = `<div class="login-loading">Loading your data…</div>`;
   try{
     await loadData();
-    recomputeAllStatuses();
+    DB.projects.forEach(recomputeProjectStatus);
     renderAppShell();
     render();
   }catch(e){
