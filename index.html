@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>APE — Project Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <style>
   :root{
@@ -20,25 +21,23 @@
     --purple:#6b4fa0;
   }
   *{box-sizing:border-box;}
-  body{
+  html, body{
     margin:0;
+    height:100%;
+  }
+  body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:#e9e9e9;
+    background:var(--cream);
     display:flex;
     justify-content:center;
-    padding:24px 12px;
   }
   .phone{
     width:100%;
-    max-width:420px;
+    max-width:720px;
     background:var(--cream);
-    border:10px solid #111;
-    border-radius:36px;
-    overflow:hidden;
-    box-shadow:0 20px 40px rgba(0,0,0,0.25);
     display:flex;
     flex-direction:column;
-    height:820px;
+    height:100dvh;
   }
   header{
     background:#fff;
@@ -206,29 +205,10 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ============ AUTH ============ */
-const TOKEN_KEY = 'ape_token';
-function getToken(){ return localStorage.getItem(TOKEN_KEY); }
-function setToken(t){ localStorage.setItem(TOKEN_KEY, t); }
-function clearToken(){ localStorage.removeItem(TOKEN_KEY); }
+/* ============ SUPABASE CLIENT ============ */
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function api(path, opts={}){
-  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
-  const token = getToken();
-  if(token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch(API_BASE_URL + path, Object.assign({}, opts, {headers}));
-  if(res.status === 401){
-    clearToken();
-    renderLogin('Session expired — please log in again.');
-    throw new Error('unauthorized');
-  }
-  if(!res.ok){
-    const body = await res.json().catch(()=>({error:'Request failed'}));
-    throw new Error(body.error || 'Request failed');
-  }
-  return res.json();
-}
-
+/* ============ RENDER: LOGIN ============ */
 function renderLogin(errorMsg){
   const phone = document.getElementById('phone');
   phone.innerHTML = `
@@ -236,25 +216,18 @@ function renderLogin(errorMsg){
       <h1>APE</h1>
       <p class="sub">Sign in to access your project tracker.</p>
       <div class="login-error">${errorMsg ? escapeHtml(errorMsg) : ''}</div>
-      <input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+      <input type="text" id="loginUser" placeholder="Email" autocomplete="username">
       <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
       <button class="btn" id="loginBtn">LOG IN</button>
     </div>`;
 
   const doLogin = async ()=>{
-    const username = document.getElementById('loginUser').value.trim();
+    const email = document.getElementById('loginUser').value.trim();
     const password = document.getElementById('loginPass').value;
-    if(!username || !password){ renderLogin('Enter a username and password'); return; }
-    try{
-      const result = await api('/login.php', {
-        method:'POST',
-        body: JSON.stringify({username, password})
-      });
-      setToken(result.token);
-      await bootApp();
-    }catch(e){
-      renderLogin('Incorrect username or password');
-    }
+    if(!email || !password){ renderLogin('Enter your email and password'); return; }
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){ renderLogin('Incorrect email or password'); return; }
+    await bootApp();
   };
   document.getElementById('loginBtn').onclick = doLogin;
   phone.querySelectorAll('input').forEach(inp=>{
@@ -282,8 +255,7 @@ function renderAppShell(){
     </footer>`;
 
   document.getElementById('logoutBtn').onclick = async ()=>{
-    try{ await api('/logout.php', {method:'POST'}); }catch(e){}
-    clearToken();
+    await sb.auth.signOut();
     renderLogin();
   };
 
@@ -297,31 +269,34 @@ function renderAppShell(){
   });
 }
 
-/* ============ DATA LAYER (server-backed) ============ */
+/* ============ DATA LAYER (Supabase-backed) ============ */
 function defaultData(){
   return { projects: [], machines: [] };
 }
 
 let DB = defaultData();
-let saveQueued = false;
+let currentUserId = null;
 
 async function loadData(){
-  const result = await api('/data.php', {method:'GET'});
-  if(result.data){
-    try{
-      const parsed = JSON.parse(result.data);
-      DB = Object.assign(defaultData(), parsed);
-    }catch(e){
-      DB = defaultData();
-    }
-  } else {
-    DB = defaultData();
-  }
+  const { data: { user } } = await sb.auth.getUser();
+  currentUserId = user.id;
+
+  const { data, error } = await sb
+    .from('app_data')
+    .select('data')
+    .eq('user_id', currentUserId)
+    .maybeSingle();
+
+  if(error) throw error;
+  DB = data && data.data ? Object.assign(defaultData(), data.data) : defaultData();
 }
 
 async function saveData(data){
   try{
-    await api('/data.php', { method:'POST', body: JSON.stringify({data}) });
+    const { error } = await sb
+      .from('app_data')
+      .upsert({ user_id: currentUserId, data, updated_at: new Date().toISOString() });
+    if(error) throw error;
     return true;
   }catch(e){
     console.error('Save failed', e);
@@ -811,16 +786,15 @@ async function bootApp(){
     renderAppShell();
     render();
   }catch(e){
-    // 401 already routes to renderLogin via api(); anything else, show a retry
-    if(getToken()){
-      phone.innerHTML = `<div class="login-loading">Couldn't load your data.<br><br>
-        <button class="btn" onclick="bootApp()">Retry</button></div>`;
-    }
+    console.error(e);
+    phone.innerHTML = `<div class="login-loading">Couldn't load your data.<br><br>
+      <button class="btn" onclick="bootApp()">Retry</button></div>`;
   }
 }
 
-(function init(){
-  if(getToken()){
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
     bootApp();
   } else {
     renderLogin();
