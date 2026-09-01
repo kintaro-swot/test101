@@ -558,4 +558,340 @@ function renderMachines(main){
   main.querySelectorAll('.return-service').forEach(btn=>{
     btn.onclick = async ()=>{
       const m = DB.machines.find(x=>x.id===btn.dataset.id);
-      m.maintenance =
+      m.maintenance = false;
+      m.maintenanceNote = '';
+      state.maintenanceEditId = null;
+      await saveData(DB);
+      showToast(`${m.name} returned to automated tracking`);
+      render();
+    };
+  });
+  main.querySelectorAll('.remove-machine').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const m = DB.machines.find(x=>x.id===btn.dataset.id);
+      if(confirm(`Remove ${m.name}? This won't remove it from steps that already reference it.`)){
+        DB.machines = DB.machines.filter(x=>x.id!==m.id);
+        await saveData(DB);
+        showToast('Machine removed');
+        render();
+      }
+    };
+  });
+}
+
+function newDraft(parentId){
+  return { id:null, parentId: parentId||null, name:'', startDate:'', endDate:'', status:'Active', steps:[] };
+}
+
+function startEditProject(projectId){
+  const p = DB.projects.find(x=>x.id===projectId);
+  state.editingProject = JSON.parse(JSON.stringify(p));
+  state.view = 'add';
+  render();
+}
+
+function renderAddProject(main){
+  if(!state.editingProject) state.editingProject = newDraft();
+  const d = state.editingProject;
+  const isEdit = !!d.id;
+
+  let stepsHtml = '';
+  if(d.steps.length===0){
+    stepsHtml = `<div class="empty small">No steps added yet.</div>`;
+  } else {
+    d.steps.forEach((s, idx)=>{
+      stepsHtml += `
+        <div class="step-row">
+          <span>${idx+1}. ${escapeHtml(s.name)} ${s.machine? '('+escapeHtml(s.machine)+')':''}</span>
+          <span class="actions">
+            <button class="edit-step" data-idx="${idx}">Edit</button>
+            <button class="del del-step" data-idx="${idx}">Del</button>
+          </span>
+        </div>`;
+    });
+  }
+
+  const machineOptions = DB.machines.map(m=>`<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('');
+
+  main.innerHTML = `
+    <div class="form-card">
+      <h2>Project Details</h2>
+      <input type="text" id="pName" placeholder="Project Name" value="${escapeHtml(d.name)}">
+      <div class="row2">
+        <div><label>Start Date</label><input type="date" id="pStart" value="${d.startDate||''}"></div>
+        <div><label>End Date</label><input type="date" id="pEnd" value="${d.endDate||''}"></div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <h2>Add Step</h2>
+      <input type="number" id="stepNo" placeholder="Step No." min="1">
+      <input type="text" id="stepName" placeholder="Step Name/Function">
+      <select id="stepMachine">
+        <option value="">Select Machine</option>
+        ${machineOptions}
+      </select>
+      ${DB.machines.length===0 ? `<div class="hint">No machines yet — add one in the Machines tab to link equipment to steps.</div>` : ''}
+      <button class="btn" id="saveStepBtn">SAVE STEP</button>
+    </div>
+
+    <div class="form-card">
+      <h2>Saved Steps</h2>
+      ${stepsHtml}
+    </div>
+
+    <button class="btn green" id="commitBtn">${isEdit ? 'SAVE PROJECT' : 'COMMIT PROJECT'}</button>
+    ${isEdit ? `<button class="btn grey" id="cancelEditBtn" style="margin-top:10px;">Cancel</button>
+    <button class="btn" id="deleteProjectBtn" style="margin-top:10px;background:#b3212f;">Delete Project</button>` : ''}
+  `;
+
+  document.getElementById('pName').oninput = e => d.name = e.target.value;
+  document.getElementById('pStart').oninput = e => d.startDate = e.target.value;
+  document.getElementById('pEnd').oninput = e => d.endDate = e.target.value;
+
+  document.getElementById('saveStepBtn').onclick = ()=>{
+    const no = document.getElementById('stepNo').value;
+    const name = document.getElementById('stepName').value.trim();
+    const machine = document.getElementById('stepMachine').value;
+    if(!name){ showToast('Step name is required'); return; }
+    d.steps.push({
+      id: uid(),
+      stepNo: no ? parseInt(no,10) : d.steps.length+1,
+      name, machine,
+      status: 'None',
+      doneBy: '', time: '', description: ''
+    });
+    d.steps.sort((a,b)=> (a.stepNo||0) - (b.stepNo||0));
+    render();
+  };
+
+  main.querySelectorAll('.del-step').forEach(btn=>{
+    btn.onclick = ()=>{ d.steps.splice(parseInt(btn.dataset.idx,10),1); render(); };
+  });
+  main.querySelectorAll('.edit-step').forEach(btn=>{
+    btn.onclick = ()=>{
+      const s = d.steps[parseInt(btn.dataset.idx,10)];
+      document.getElementById('stepNo').value = s.stepNo || '';
+      document.getElementById('stepName').value = s.name;
+      document.getElementById('stepMachine').value = s.machine || '';
+      d.steps.splice(parseInt(btn.dataset.idx,10),1);
+      render();
+    };
+  });
+
+  document.getElementById('commitBtn').onclick = async ()=>{
+    if(!d.name.trim()){ showToast('Project name is required'); return; }
+    if(!d.startDate || !d.endDate){ showToast('Start and end dates are required'); return; }
+
+    if(isEdit){
+      const idx = DB.projects.findIndex(x=>x.id===d.id);
+      DB.projects[idx] = d;
+    } else {
+      d.id = uid();
+      DB.projects.push(d);
+    }
+    recomputeAllStatuses();
+    await saveData(DB);
+    showToast(isEdit ? 'Project saved' : 'Project created');
+    state.editingProject = null;
+    if(isEdit){
+      state.view = 'detail';
+      state.currentProjectId = d.id;
+    } else if(d.parentId){
+      // land on the new sub-project so its steps/sub-projects can be added right away
+      state.view = 'detail';
+      state.currentProjectId = d.id;
+    } else {
+      state.view = 'projects';
+      state.currentProjectId = d.id;
+    }
+    render();
+  };
+
+  if(isEdit){
+    document.getElementById('cancelEditBtn').onclick = ()=>{
+      state.editingProject = null;
+      state.view = 'detail';
+      render();
+    };
+    document.getElementById('deleteProjectBtn').onclick = async ()=>{
+      const hasChildren = DB.projects.some(x=>x.parentId===d.id);
+      const msg = hasChildren
+        ? 'Delete this project permanently? This will also delete all of its sub-projects.'
+        : 'Delete this project permanently?';
+      if(confirm(msg)){
+        const toDelete = new Set();
+        (function collect(id){
+          toDelete.add(id);
+          DB.projects.filter(x=>x.parentId===id).forEach(c=>collect(c.id));
+        })(d.id);
+        const parentId = d.parentId;
+        DB.projects = DB.projects.filter(x=>!toDelete.has(x.id));
+        recomputeAllStatuses();
+        await saveData(DB);
+        state.editingProject = null;
+        if(parentId && DB.projects.some(x=>x.id===parentId)){
+          state.view = 'detail';
+          state.currentProjectId = parentId;
+        } else {
+          state.view = 'projects';
+          state.currentProjectId = null;
+        }
+        render();
+      }
+    };
+  }
+}
+
+function renderProjectDetail(main){
+  const p = DB.projects.find(x=>x.id===state.currentProjectId);
+  if(!p){ state.view='projects'; return render(); }
+
+  let html = `
+    <h1 class="page-title" style="margin-bottom:2px;">${escapeHtml(p.name)}</h1>
+    <div class="dates" style="margin-bottom:6px;">${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
+    <div style="margin-bottom:14px;"><span class="badge ${p.status}">${p.status}</span></div>
+  `;
+
+  const children = getChildren(p);
+  html += `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0 10px;">
+      <h2 style="font-size:15px;color:var(--red);margin:0;">Sub-Projects</h2>
+      <button class="btn small" id="addSubBtn">+ Add Sub-Project</button>
+    </div>`;
+  if(children.length===0){
+    html += `<div class="empty small">No sub-projects yet.</div>`;
+  } else {
+    children.forEach(c=>{
+      const {done,total} = projectProgress(c);
+      const pct = total ? Math.round((done/total)*100) : 0;
+      html += `
+        <div class="card" data-subid="${c.id}">
+          <div class="card-top">
+            <h3>📁 ${escapeHtml(c.name)}</h3>
+            <span class="badge ${c.status}">${c.status}</span>
+          </div>
+          <div class="dates">${fmtDate(c.startDate)} — ${fmtDate(c.endDate)}</div>
+          <div class="progress-track"><div class="progress-fill ${c.status==='Complete'?'done':''}" style="width:${pct}%"></div></div>
+          <div class="steps-count">${done} / ${total} Completed</div>
+        </div>`;
+    });
+  }
+
+  html += `<h2 style="font-size:15px;color:var(--red);margin:18px 0 10px;">Steps</h2>`;
+  if(p.steps.length===0){
+    html += `<div class="empty small">No steps on this project.</div>`;
+  }
+
+  p.steps.forEach((s, idx)=>{
+    const cls = s.status==='Complete' ? 'complete' : (s.status==='Active' ? 'active-step' : 'none-step');
+    html += `<div class="detail-step ${cls}">
+      <div class="detail-step-top">
+        <h4>${idx+1}. ${escapeHtml(s.name)}${s.machine ? ' ('+escapeHtml(s.machine)+')' : ''}</h4>
+        <span class="badge ${s.status}">${s.status}</span>
+      </div>`;
+
+    if(s.status === 'Complete'){
+      html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy||'—')} ${s.time? '| '+escapeHtml(s.time):''} ${s.description? '| '+escapeHtml(s.description):''}</div>`;
+      html += `<div style="margin-top:8px;"><button class="btn small edit-step-status" data-id="${s.id}">Reopen step</button></div>`;
+    } else if(state.activeStepInputId === s.id){
+      html += `
+        <div class="inline-form">
+          <input type="text" id="doneBy_${s.id}" placeholder="Done by?" value="${escapeHtml(s.doneBy||'')}">
+          <select id="statusSel_${s.id}">
+            <option value="None" ${s.status==='None'?'selected':''}>None</option>
+            <option value="Active" ${s.status==='Active'?'selected':''}>Active</option>
+            <option value="Complete">Complete</option>
+          </select>
+          <textarea id="desc_${s.id}" placeholder="Description">${escapeHtml(s.description||'')}</textarea>
+          <button class="btn green mark-done" data-id="${s.id}">Done</button>
+        </div>`;
+    } else {
+      html += `<div class="detail-meta">Done by: ${escapeHtml(s.doneBy) || 'None'}</div>`;
+      html += `<div style="margin-top:8px;"><button class="btn small open-step" data-id="${s.id}">Fill in</button></div>`;
+    }
+    html += `</div>`;
+  });
+
+  main.innerHTML = html;
+
+  document.getElementById('addSubBtn').onclick = ()=>{
+    state.editingProject = newDraft(p.id);
+    state.view = 'add';
+    render();
+  };
+  main.querySelectorAll('[data-subid]').forEach(c=>{
+    c.onclick = ()=>{
+      state.currentProjectId = c.dataset.subid;
+      state.activeStepInputId = null;
+      render();
+    };
+  });
+
+  main.querySelectorAll('.open-step').forEach(btn=>{
+    btn.onclick = ()=>{ state.activeStepInputId = btn.dataset.id; render(); };
+  });
+
+  main.querySelectorAll('.edit-step-status').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const s = p.steps.find(x=>x.id===btn.dataset.id);
+      s.status = 'Active';
+      recomputeAllStatuses();
+      await saveData(DB);
+      state.activeStepInputId = s.id;
+      render();
+    };
+  });
+
+  main.querySelectorAll('.mark-done').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const s = p.steps.find(x=>x.id===btn.dataset.id);
+      s.doneBy = document.getElementById('doneBy_'+s.id).value.trim();
+      s.status = document.getElementById('statusSel_'+s.id).value;
+      s.description = document.getElementById('desc_'+s.id).value.trim();
+      if(s.status === 'Complete'){
+        const now = new Date();
+        s.time = now.getDate()+' - '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      }
+      state.activeStepInputId = null;
+
+      const wasFinished = p.status === 'Complete';
+      recomputeAllStatuses();
+      if(p.status === 'Complete' && !wasFinished){
+        showToast('All steps complete — project moved to Completed!');
+      }
+      await saveData(DB);
+      render();
+    };
+  });
+}
+
+function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+/* ============ BOOT ============ */
+async function bootApp(){
+  const phone = document.getElementById('phone');
+  phone.innerHTML = `<div class="login-loading">Loading your data…</div>`;
+  try{
+    await loadData();
+    recomputeAllStatuses();
+    renderAppShell();
+    render();
+  }catch(e){
+    console.error(e);
+    phone.innerHTML = `<div class="login-loading">Couldn't load your data.<br><br>
+      <button class="btn" onclick="bootApp()">Retry</button></div>`;
+  }
+}
+
+(async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    bootApp();
+  } else {
+    renderLogin();
+  }
+})();
+</script>
+</body>
+</html>
